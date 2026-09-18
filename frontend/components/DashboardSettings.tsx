@@ -1,0 +1,172 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch, ApiError } from "@/lib/api";
+
+type Panel = null | "profile" | "password";
+
+type DashboardSettingsProps = {
+  initialFirstName: string;
+  initialLastName: string;
+  initialUniversity: string;
+};
+
+export default function DashboardSettings({
+  initialFirstName,
+  initialLastName,
+  initialUniversity,
+}: DashboardSettingsProps) {
+  const router = useRouter();
+  const [panel, setPanel] = useState<Panel>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function togglePanel(next: Panel) {
+    setError(null);
+    setSuccess(null);
+    setPanel((current) => (current === next ? null : next));
+  }
+
+  async function handleProfileSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    try {
+      await apiFetch("/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          first_name: formData.get("first_name"),
+          last_name: formData.get("last_name"),
+          university: formData.get("university"),
+        }),
+      });
+      setSuccess("Profile updated");
+      setPanel(null);
+      router.refresh(); // re-fetches the server-rendered header with the new values
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't update your profile");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    const newPassword = formData.get("new_password");
+    const confirmPassword = formData.get("confirm_password");
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiFetch("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          current_password: formData.get("current_password"),
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        }),
+      });
+      setSuccess("Password changed");
+      setPanel(null);
+      (e.target as HTMLFormElement).reset();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't change your password");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!window.confirm("Delete your account permanently? This cannot be undone.")) return;
+    setLoading(true);
+    try {
+      await apiFetch("/users/me", { method: "DELETE" });
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't delete your account");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div id="settings" style={{ marginTop: 36 }}>
+      <h4 style={{ margin: "0 0 14px" }}>Settings</h4>
+
+      {error && <div className="form-error">{error}</div>}
+      {success && <div className="form-success">{success}</div>}
+
+      <div className="settings-grid">
+        <button className="btn btn-outline btn-sm" onClick={() => togglePanel("profile")}>
+          👤 Account
+        </button>
+        <button className="btn btn-outline btn-sm" disabled title="Not available yet">
+          🔔 Notification Prefs
+        </button>
+        <button className="btn btn-outline btn-sm" disabled title="Not available yet">
+          📊 Study Preferences
+        </button>
+        <button className="btn btn-outline btn-sm" onClick={() => togglePanel("password")}>
+          🔒 Change Password
+        </button>
+        <button
+          className="btn btn-sm"
+          style={{ background: "var(--red-100)", color: "var(--red-600)" }}
+          onClick={handleDeleteAccount}
+          disabled={loading}
+        >
+          🗑 Delete Account
+        </button>
+      </div>
+
+      {panel === "profile" && (
+        <form onSubmit={handleProfileSubmit} className="panel mt-24">
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="settings_first_name">First Name</label>
+              <input id="settings_first_name" name="first_name" defaultValue={initialFirstName} required />
+            </div>
+            <div className="field">
+              <label htmlFor="settings_last_name">Last Name</label>
+              <input id="settings_last_name" name="last_name" defaultValue={initialLastName} required />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="settings_university">University / Institution</label>
+            <input id="settings_university" name="university" defaultValue={initialUniversity} required />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? "Saving…" : "Save changes"}
+          </button>
+        </form>
+      )}
+
+      {panel === "password" && (
+        <form onSubmit={handlePasswordSubmit} className="panel mt-24">
+          <div className="field">
+            <label htmlFor="current_password">Current Password</label>
+            <input type="password" id="current_password" name="current_password" required />
+          </div>
+          <div className="field">
+            <label htmlFor="new_password">New Password</label>
+            <input type="password" id="new_password" name="new_password" minLength={8} required />
+          </div>
+          <div className="field">
+            <label htmlFor="confirm_password">Confirm New Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" minLength={8} required />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? "Saving…" : "Change password"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}

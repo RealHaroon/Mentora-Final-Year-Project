@@ -137,9 +137,15 @@ button { font-family: inherit; cursor: pointer; }
   z-index: 40;
 }
 
-.nav-dropdown:hover .nav-dropdown-panel,
-.nav-dropdown:focus-within .nav-dropdown-panel {
+/* Visibility is driven entirely by the JS click-toggle (SiteHeader's `open`
+   state) — no CSS :hover trigger. Mixing both caused the panel to stay
+   visually open after a link click whenever the mouse hadn't moved away. */
+.nav-dropdown.open .nav-dropdown-panel {
   display: block;
+}
+
+.nav-dropdown > button {
+  cursor: pointer;
 }
 
 .nav-dropdown-panel .group-label {
@@ -452,6 +458,8 @@ table.data-table tbody tr:hover { background: var(--green-50); }
 .progress-fill.low { background: var(--red-600); }
 
 /* Forms */
+.form-error { color: var(--red-600); background: var(--red-100); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; }
+.form-success { color: var(--green-800); background: var(--green-100); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; }
 .field { margin-bottom: 18px; }
 .field label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--green-800); margin-bottom: 6px; }
 .field input, .field select, .field textarea {

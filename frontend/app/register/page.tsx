@@ -1,12 +1,56 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthShell from "@/components/AuthShell";
 
-export const metadata: Metadata = {
-  title: "Create Account",
-};
-
 export default function RegisterPage() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const password = formData.get("password");
+    const confirmPassword = formData.get("confirm_password");
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    const payload = {
+      first_name: formData.get("first_name"),
+      last_name: formData.get("last_name"),
+      email: formData.get("email"),
+      password,
+      confirm_password: confirmPassword,
+      university: formData.get("university"),
+      exam_goal: formData.get("exam_goal"),
+    };
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.detail ?? "Registration failed");
+      }
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <AuthShell
       sideHeading="MENTORA"
@@ -21,7 +65,9 @@ export default function RegisterPage() {
       <h2>Create your account</h2>
       <p className="subhead">Start your journey from classroom to career</p>
 
-      <form id="register-form" name="register-form">
+      {error && <div className="form-error">{error}</div>}
+
+      <form id="register-form" name="register-form" onSubmit={handleSubmit}>
         <div className="field-row">
           <div className="field">
             <label htmlFor="first_name">First Name</label>
@@ -119,8 +165,8 @@ export default function RegisterPage() {
           </select>
         </div>
 
-        <button type="submit" className="btn btn-primary btn-block">
-          Create Account →
+        <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+          {loading ? "Creating account…" : "Create Account →"}
         </button>
       </form>
 

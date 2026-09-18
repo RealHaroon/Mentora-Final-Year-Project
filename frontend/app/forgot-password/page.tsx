@@ -1,12 +1,70 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import AuthShell from "@/components/AuthShell";
-
-export const metadata: Metadata = {
-  title: "Forgot Password",
-};
+import { apiFetch, ApiError } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
+  const [requestLoading, setRequestLoading] = useState(false);
+
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  async function handleRequestReset(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setRequestError(null);
+    setRequestSuccess(null);
+    setRequestLoading(true);
+    const formData = new FormData(e.currentTarget);
+    try {
+      await apiFetch<{ detail: string }>("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: formData.get("email") }),
+      });
+      setRequestSuccess("If that email is registered, a reset code has been sent.");
+    } catch (err) {
+      setRequestError(err instanceof ApiError ? err.message : "Something went wrong");
+    } finally {
+      setRequestLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setResetError(null);
+    setResetSuccess(null);
+
+    const formData = new FormData(e.currentTarget);
+    const newPassword = formData.get("new_password");
+    const confirmPassword = formData.get("confirm_password");
+    if (newPassword !== confirmPassword) {
+      setResetError("Passwords do not match");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await apiFetch<{ detail: string }>("/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          reset_code: formData.get("reset_code"),
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        }),
+      });
+      setResetSuccess("Password reset — you can log in with your new password now.");
+      (e.target as HTMLFormElement).reset();
+    } catch (err) {
+      setResetError(err instanceof ApiError ? err.message : "Something went wrong");
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   return (
     <AuthShell
       sideHeading="MENTORA"
@@ -23,7 +81,10 @@ export default function ForgotPasswordPage() {
       <h2 style={{ marginTop: 14 }}>Forgot your password?</h2>
       <p className="subhead">Enter your registered email address and we&apos;ll send you a reset link</p>
 
-      <form id="request-reset-form" name="request-reset-form">
+      {requestError && <div className="form-error">{requestError}</div>}
+      {requestSuccess && <div className="form-success">{requestSuccess}</div>}
+
+      <form id="request-reset-form" name="request-reset-form" onSubmit={handleRequestReset}>
         <div className="field">
           <label htmlFor="email">Registered Email Address</label>
           <input
@@ -35,8 +96,8 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
           />
         </div>
-        <button type="submit" className="btn btn-primary btn-block">
-          Send Reset Link →
+        <button type="submit" className="btn btn-primary btn-block" disabled={requestLoading}>
+          {requestLoading ? "Sending…" : "Send Reset Link →"}
         </button>
       </form>
 
@@ -44,7 +105,10 @@ export default function ForgotPasswordPage() {
 
       <div className="step-label">Step 2 — Enter Reset Code</div>
 
-      <form id="reset-password-form" name="reset-password-form">
+      {resetError && <div className="form-error">{resetError}</div>}
+      {resetSuccess && <div className="form-success">{resetSuccess}</div>}
+
+      <form id="reset-password-form" name="reset-password-form" onSubmit={handleResetPassword}>
         <div className="field">
           <label htmlFor="reset_code">Reset Code (from email)</label>
           <input
@@ -82,13 +146,14 @@ export default function ForgotPasswordPage() {
             autoComplete="new-password"
           />
         </div>
-        <button type="submit" className="btn btn-outline btn-block">
-          Reset Password →
+        <button type="submit" className="btn btn-outline btn-block" disabled={resetLoading}>
+          {resetLoading ? "Resetting…" : "Reset Password →"}
         </button>
       </form>
 
       <div className="demo-note">
-        If you don&apos;t see the email, check your spam/junk folder · Contact: support@mentora.pk
+        No email service is wired up yet — the reset code is printed to the backend's
+        terminal log for local testing.
       </div>
     </AuthShell>
   );

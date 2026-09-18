@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { McqResponse, McqSubmitResponse, TimetableResponse, TodayTopicResponse } from "@/lib/types";
 
 type Subject = { id: string; label: string };
 
@@ -12,11 +14,82 @@ const SUBJECTS: Subject[] = [
   { id: "urdu", label: "Urdu" },
 ];
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  done: "Done ✓",
+  today: "Today",
+  missed: "Missed",
+};
+
 export default function ExamPrepPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["mathematics"]);
+  const [testDate, setTestDate] = useState("");
+  const [studyMode, setStudyMode] = useState("");
+
+  const [timetable, setTimetable] = useState<TimetableResponse | null>(null);
+  const [todayTopic, setTodayTopic] = useState<TodayTopicResponse | null>(null);
+  const [mcq, setMcq] = useState<McqResponse | null>(null);
+  const [mcqResult, setMcqResult] = useState<McqSubmitResponse | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetch<TimetableResponse>("/exam/timetable"),
+      apiFetch<TodayTopicResponse>("/exam/today-topic"),
+      apiFetch<McqResponse>("/exam/mcq"),
+    ])
+      .then(([timetableRes, topicRes, mcqRes]) => {
+        setTimetable(timetableRes);
+        setTodayTopic(topicRes);
+        setMcq(mcqRes);
+      })
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load this right now"));
+  }, []);
+
+  async function savePreferences(next: { subjects?: string[]; test_date?: string; study_mode?: string }) {
+    try {
+      await apiFetch("/exam/subjects", {
+        method: "PATCH",
+        body: JSON.stringify({
+          subjects: next.subjects ?? selectedSubjects,
+          test_date: next.test_date ?? (testDate || null),
+          study_mode: next.study_mode ?? (studyMode || null),
+        }),
+      });
+    } catch {
+      // Preferences are non-critical — fail silently rather than block the UI.
+    }
+  }
 
   function toggleSubject(id: string) {
-    setSelectedSubjects((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+    const next = selectedSubjects.includes(id)
+      ? selectedSubjects.filter((s) => s !== id)
+      : [...selectedSubjects, id];
+    setSelectedSubjects(next);
+    savePreferences({ subjects: next });
+  }
+
+  async function handleMcqSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!mcq) return;
+    const formData = new FormData(e.currentTarget);
+    const answer = formData.get(`answer_${mcq.question.question_id}`);
+    if (!answer) return;
+
+    setSubmitting(true);
+    setMcqResult(null);
+    try {
+      const result = await apiFetch<McqSubmitResponse>("/exam/mcq/submit", {
+        method: "POST",
+        body: JSON.stringify({ question_id: mcq.question.question_id, answer }),
+      });
+      setMcqResult(result);
+    } catch (err) {
+      setLoadError(err instanceof ApiError ? err.message : "Couldn't submit that answer");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -35,9 +108,11 @@ export default function ExamPrepPage() {
 
       <section className="section">
         <div className="container">
+          {loadError && <div className="form-error">{loadError}</div>}
+
           <div className="grid-2" style={{ gridTemplateColumns: "200px 1fr", marginBottom: 28 }}>
             <div className="stat-block">
-              <div className="stat-num">47</div>
+              <div className="stat-num">{timetable?.days_to_exam ?? "—"}</div>
               <div className="stat-label">Days to Exam · Auto-updated daily</div>
             </div>
 
@@ -68,11 +143,28 @@ export default function ExamPrepPage() {
                 <div className="field-row mt-24" style={{ marginTop: 16 }}>
                   <div className="field mb-0">
                     <label htmlFor="test_date">Test date</label>
-                    <input type="date" id="test_date" name="test_date" />
+                    <input
+                      type="date"
+                      id="test_date"
+                      name="test_date"
+                      value={testDate}
+                      onChange={(e) => {
+                        setTestDate(e.target.value);
+                        savePreferences({ test_date: e.target.value });
+                      }}
+                    />
                   </div>
                   <div className="field mb-0">
                     <label htmlFor="study_mode">Study mode</label>
-                    <select id="study_mode" name="study_mode" defaultValue="">
+                    <select
+                      id="study_mode"
+                      name="study_mode"
+                      value={studyMode}
+                      onChange={(e) => {
+                        setStudyMode(e.target.value);
+                        savePreferences({ study_mode: e.target.value });
+                      }}
+                    >
                       <option value="" disabled>
                         Select study mode
                       </option>
@@ -103,127 +195,111 @@ export default function ExamPrepPage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Monday</td>
-                <td>Algebra — Quadratic Equations</td>
-                <td>Mathematics</td>
-                <td>2 hrs</td>
-                <td>
-                  <span className="status-pill status-pending">Pending</span>
-                </td>
-              </tr>
-              <tr>
-                <td>Tuesday</td>
-                <td>Reading Comprehension</td>
-                <td>English</td>
-                <td>1.5 hrs</td>
-                <td>
-                  <span className="status-pill status-done">Done ✓</span>
-                </td>
-              </tr>
-              <tr>
-                <td>Wednesday</td>
-                <td>Grammar — Tenses & Voice</td>
-                <td>English</td>
-                <td>2 hrs</td>
-                <td>
-                  <span className="status-pill status-today">Today</span>
-                </td>
-              </tr>
-              <tr>
-                <td>Thursday</td>
-                <td>Geometry — Lines & Angles</td>
-                <td>Mathematics</td>
-                <td>2 hrs</td>
-                <td>
-                  <span className="status-pill status-missed">Missed</span>
-                </td>
-              </tr>
-              <tr>
-                <td>Friday</td>
-                <td>Revision + MCQ Test</td>
-                <td>Mixed</td>
-                <td>1 hr</td>
-                <td>
-                  <span className="status-pill status-pending">Pending</span>
-                </td>
-              </tr>
+              {timetable ? (
+                timetable.rows.map((row) => (
+                  <tr key={row.day}>
+                    <td>{row.day}</td>
+                    <td>{row.topic}</td>
+                    <td>{row.subject}</td>
+                    <td>{row.duration}</td>
+                    <td>
+                      <span className={`status-pill status-${row.status}`}>{STATUS_LABEL[row.status]}</span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="small-muted">
+                    Loading timetable…
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
           <h3 style={{ fontFamily: "var(--font-display)", margin: "28px 0 14px" }}>
-            Today&apos;s Topic: Quadratic Equations
+            {todayTopic ? `Today's Topic: ${todayTopic.topic}` : "Today's Topic"}
           </h3>
           <div className="grid-3">
             <div className="panel">
               <div className="small-muted" style={{ marginBottom: 8 }}>
                 AI Topic Explainer
               </div>
-              <p style={{ fontSize: "0.88rem", color: "var(--ink-700)" }}>
-                A quadratic equation has the form ax² + bx + c = 0. Key methods:
-              </p>
-              <ul
-                style={{
-                  margin: "0 0 16px",
-                  paddingLeft: 18,
-                  listStyle: "disc",
-                  fontSize: "0.85rem",
-                  color: "var(--ink-700)",
-                }}
-              >
-                <li>Factorization method</li>
-                <li>Quadratic formula</li>
-                <li>Completing the square</li>
-              </ul>
+              {todayTopic ? (
+                <>
+                  <p style={{ fontSize: "0.88rem", color: "var(--ink-700)" }}>{todayTopic.explainer.summary}</p>
+                  <ul
+                    style={{
+                      margin: "0 0 16px",
+                      paddingLeft: 18,
+                      listStyle: "disc",
+                      fontSize: "0.85rem",
+                      color: "var(--ink-700)",
+                    }}
+                  >
+                    {todayTopic.explainer.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="small-muted">Loading…</p>
+              )}
               <a href="#mcq-form" className="btn btn-primary btn-block">
                 Take MCQ Test →
               </a>
             </div>
-            <div className="panel">
-              <div className="small-muted" style={{ marginBottom: 8 }}>
-                YouTube Video
+            {(todayTopic?.videos ?? []).map((video) => (
+              <div className="panel" key={video.title}>
+                <div className="small-muted" style={{ marginBottom: 8 }}>
+                  YouTube Video
+                </div>
+                <h4 style={{ margin: "0 0 4px" }}>{video.title}</h4>
+                <p className="small-muted" style={{ margin: "0 0 14px" }}>
+                  {video.source} · {video.duration_min} min · AI-matched
+                </p>
+                <button className="btn btn-outline btn-block">+ Add to Playlist</button>
               </div>
-              <h4 style={{ margin: "0 0 4px" }}>Quadratic Equations — Full Chapter</h4>
-              <p className="small-muted" style={{ margin: "0 0 14px" }}>
-                MathCity.org · 18 min · AI-matched
-              </p>
-              <button className="btn btn-outline btn-block">+ Add to Playlist</button>
-            </div>
-            <div className="panel">
-              <div className="small-muted" style={{ marginBottom: 8 }}>
-                YouTube Video
-              </div>
-              <h4 style={{ margin: "0 0 4px" }}>Quadratic Formula — Step by Step</h4>
-              <p className="small-muted" style={{ margin: "0 0 14px" }}>
-                Khan Academy · 12 min · AI-matched
-              </p>
-              <button className="btn btn-outline btn-block">+ Add to Playlist</button>
-            </div>
+            ))}
           </div>
 
-          <form id="mcq-form" name="mcq-form" className="panel mt-24">
-            <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — Quadratic Equations (AI-Generated)</h4>
-            <p style={{ fontSize: "0.92rem", margin: "0 0 14px" }} data-question-id="Q1001">
-              Q1. Solve x² − 5x + 6 = 0. What are the roots?
-            </p>
-            <label className="mcq-option">
-              <input type="radio" name="answer_Q1001" value="A" required /> x = 2, 3
-            </label>
-            <label className="mcq-option">
-              <input type="radio" name="answer_Q1001" value="B" /> x = −2, 3
-            </label>
-            <label className="mcq-option">
-              <input type="radio" name="answer_Q1001" value="C" /> x = 1, 6
-            </label>
-            <label className="mcq-option">
-              <input type="radio" name="answer_Q1001" value="D" /> x = −1, −6
-            </label>
-            <div className="flex-between mt-24">
-              <button type="submit" className="btn btn-primary">
-                Submit →
-              </button>
-              <span className="small-muted">5 MCQs total · 4 remaining · Generated by FLAN-T5 model</span>
-            </div>
+          <form id="mcq-form" name="mcq-form" className="panel mt-24" onSubmit={handleMcqSubmit}>
+            {mcq ? (
+              <>
+                <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
+                <p style={{ fontSize: "0.92rem", margin: "0 0 14px" }} data-question-id={mcq.question.question_id}>
+                  {mcq.question.text}
+                </p>
+                {mcq.question.options.map((option) => (
+                  <label className="mcq-option" key={option.value}>
+                    <input
+                      type="radio"
+                      name={`answer_${mcq.question.question_id}`}
+                      value={option.value}
+                      required
+                    />{" "}
+                    {option.text}
+                  </label>
+                ))}
+                {mcqResult && (
+                  <div className={mcqResult.correct ? "form-success" : "form-error"}>
+                    {mcqResult.correct
+                      ? "Correct!"
+                      : `Not quite — the correct answer is ${mcqResult.correct_answer}.`}
+                  </div>
+                )}
+                <div className="flex-between mt-24">
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    {submitting ? "Submitting…" : "Submit →"}
+                  </button>
+                  <span className="small-muted">
+                    {mcq.total} MCQs total · {mcq.remaining} remaining · Generated by {mcq.generated_by}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p className="small-muted">Loading MCQ…</p>
+            )}
           </form>
         </div>
       </section>

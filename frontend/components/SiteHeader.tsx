@@ -1,16 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type SiteHeaderProps = {
   variant: "public" | "app";
 };
 
+type DropdownKey = "exam-prep" | "career" | "dashboard";
+
 export default function SiteHeader({ variant }: SiteHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<DropdownKey | null>(null);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  }
 
   const isHome = pathname === "/";
   const isExamPrep = pathname.startsWith("/exam-prep");
@@ -18,10 +28,27 @@ export default function SiteHeader({ variant }: SiteHeaderProps) {
   const isLearningPortal = pathname.startsWith("/learning-portal");
   const isDashboard = pathname.startsWith("/dashboard");
 
-  // Close the mobile menu whenever the route changes (e.g. after tapping a link).
+  // Close the mobile menu / any open dropdown whenever the route changes.
   useEffect(() => {
     setMenuOpen(false);
+    setOpenDropdown(null);
   }, [pathname]);
+
+  // Click-toggle dropdowns close when you click anywhere else on the page.
+  useEffect(() => {
+    if (!openDropdown) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (!(e.target as HTMLElement).closest(".nav-dropdown")) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [openDropdown]);
+
+  function toggleDropdown(key: DropdownKey) {
+    setOpenDropdown((current) => (current === key ? null : key));
+  }
 
   return (
     <header className="site-header">
@@ -34,9 +61,11 @@ export default function SiteHeader({ variant }: SiteHeaderProps) {
             Home
           </Link>
 
-          <div className={`nav-dropdown${isExamPrep ? " active" : ""}`}>
-            <button type="button">Exam Prep ▾</button>
-            <div className="nav-dropdown-panel">
+          <div className={`nav-dropdown${isExamPrep ? " active" : ""}${openDropdown === "exam-prep" ? " open" : ""}`}>
+            <button type="button" aria-expanded={openDropdown === "exam-prep"} onClick={() => toggleDropdown("exam-prep")}>
+              Exam Prep ▾
+            </button>
+            <div className="nav-dropdown-panel" onClick={() => setOpenDropdown(null)}>
               <div className="group-label">University Entry Tests</div>
               <Link href="/exam-prep" className={isExamPrep ? "current" : undefined}>
                 Sindh University
@@ -53,9 +82,11 @@ export default function SiteHeader({ variant }: SiteHeaderProps) {
             </div>
           </div>
 
-          <div className={`nav-dropdown${isCareer ? " active" : ""}`}>
-            <button type="button">Career ▾</button>
-            <div className="nav-dropdown-panel">
+          <div className={`nav-dropdown${isCareer ? " active" : ""}${openDropdown === "career" ? " open" : ""}`}>
+            <button type="button" aria-expanded={openDropdown === "career"} onClick={() => toggleDropdown("career")}>
+              Career ▾
+            </button>
+            <div className="nav-dropdown-panel" onClick={() => setOpenDropdown(null)}>
               <Link href="/career" className={isCareer ? "current" : undefined}>
                 Career Counseling
               </Link>
@@ -68,15 +99,17 @@ export default function SiteHeader({ variant }: SiteHeaderProps) {
           </Link>
 
           {isDashboard ? (
-            <div className="nav-dropdown active">
-              <button type="button">Dashboard ▾</button>
-              <div className="nav-dropdown-panel">
-                <Link href="/dashboard" className="current">
+            <div className={`nav-dropdown active${openDropdown === "dashboard" ? " open" : ""}`}>
+              <button type="button" aria-expanded={openDropdown === "dashboard"} onClick={() => toggleDropdown("dashboard")}>
+                Dashboard ▾
+              </button>
+              <div className="nav-dropdown-panel" onClick={() => setOpenDropdown(null)}>
+                <Link href="/dashboard#profile" className="current">
                   Student Profile (SIP)
                 </Link>
-                <Link href="/dashboard">Exam History</Link>
-                <Link href="/dashboard">Performance Charts</Link>
-                <Link href="/dashboard">Notifications</Link>
+                <Link href="/dashboard#weekly-snapshot">Exam History</Link>
+                <Link href="/dashboard#score-trend">Performance Charts</Link>
+                <Link href="/dashboard#notifications">Notifications</Link>
               </div>
             </div>
           ) : (
@@ -105,14 +138,21 @@ export default function SiteHeader({ variant }: SiteHeaderProps) {
                 Sign Up →
               </Link>
             </>
-          ) : isDashboard ? (
-            <a href="#settings" className="btn btn-ghost-light btn-sm">
-              Settings
-            </a>
           ) : (
-            <Link href="/dashboard" className="btn btn-ghost-light btn-sm">
-              My Profile
-            </Link>
+            <>
+              {isDashboard ? (
+                <a href="#settings" className="btn btn-ghost-light btn-sm">
+                  Settings
+                </a>
+              ) : (
+                <Link href="/dashboard" className="btn btn-ghost-light btn-sm">
+                  My Profile
+                </Link>
+              )}
+              <button type="button" className="btn btn-ghost-light btn-sm" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
           )}
         </div>
       </div>

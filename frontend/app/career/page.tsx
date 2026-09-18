@@ -1,7 +1,137 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { apiFetch, ApiError } from "@/lib/api";
+import type {
+  AiSuggestResponse,
+  CvUploadResponse,
+  InterviewAskResponse,
+  InterviewStartResponse,
+  RankingsResponse,
+  RoadmapResponse,
+} from "@/lib/types";
+
+const PROGRESS_CLASS = (score: number) => (score >= 75 ? "" : score >= 50 ? " warn" : " low");
 
 export default function CareerPage() {
+  const [extracted, setExtracted] = useState<CvUploadResponse | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [careerGoal, setCareerGoal] = useState("data_scientist");
+
+  const [rankings, setRankings] = useState<RankingsResponse | null>(null);
+  const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [interview, setInterview] = useState<InterviewStartResponse | null>(null);
+  const [interviewFeedback, setInterviewFeedback] = useState<InterviewAskResponse | null>(null);
+  const [interviewAnswer, setInterviewAnswer] = useState("");
+  const [interviewLoading, setInterviewLoading] = useState(false);
+
+  async function refreshRankings() {
+    try {
+      const data = await apiFetch<RankingsResponse>("/career/rankings");
+      setRankings(data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't load career rankings");
+    }
+  }
+
+  useEffect(() => {
+    refreshRankings();
+    apiFetch<RoadmapResponse>("/career/roadmap?career_id=1")
+      .then(setRoadmap)
+      .catch(() => {});
+  }, []);
+
+  async function handleCvUpload(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    if (!(formData.get("cv_file") as File)?.name) return;
+
+    setUploading(true);
+    setError(null);
+    try {
+      const result = await apiFetch<CvUploadResponse>("/career/cv-upload", {
+        method: "POST",
+        body: formData,
+        headers: {}, // don't set Content-Type — the browser sets the multipart boundary itself
+      });
+      setExtracted(result);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "CV upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleGoalChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value;
+    setCareerGoal(value);
+    try {
+      await apiFetch("/career/goal", {
+        method: "POST",
+        body: JSON.stringify({ career_goal: value }),
+      });
+      await refreshRankings();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save career goal");
+    }
+  }
+
+  async function handleAiSuggest() {
+    try {
+      const suggestion = await apiFetch<AiSuggestResponse>("/career/ai-suggest");
+      setCareerGoal(suggestion.career_goal);
+      await refreshRankings();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't get an AI suggestion");
+    }
+  }
+
+  async function handleViewRoadmap(careerId: number) {
+    try {
+      const data = await apiFetch<RoadmapResponse>(`/career/roadmap?career_id=${careerId}`);
+      setRoadmap(data);
+      document.getElementById("roadmap-section")?.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't load that roadmap");
+    }
+  }
+
+  async function handleStartInterview() {
+    setInterviewLoading(true);
+    setError(null);
+    try {
+      const session = await apiFetch<InterviewStartResponse>("/interview/start", { method: "POST" });
+      setInterview(session);
+      setInterviewFeedback(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't start the mock interview");
+    } finally {
+      setInterviewLoading(false);
+    }
+  }
+
+  async function handleInterviewAsk(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!interview || !interviewAnswer.trim()) return;
+    setInterviewLoading(true);
+    try {
+      const result = await apiFetch<InterviewAskResponse>(`/interview/${interview.interview_id}/ask`, {
+        method: "POST",
+        body: JSON.stringify({ answer: interviewAnswer }),
+      });
+      setInterviewFeedback(result);
+      setInterviewAnswer("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't submit that answer");
+    } finally {
+      setInterviewLoading(false);
+    }
+  }
+
   return (
     <>
       <SiteHeader variant="app" />
@@ -17,12 +147,14 @@ export default function CareerPage() {
 
       <section className="section">
         <div className="container">
+          {error && <div className="form-error">{error}</div>}
+
           <div className="grid-3" style={{ marginBottom: 28 }}>
             <div className="panel">
               <div className="small-muted" style={{ marginBottom: 14 }}>
                 Step 1 — Upload CV / Transcript
               </div>
-              <form id="cv-upload-form" name="cv-upload-form">
+              <form id="cv-upload-form" name="cv-upload-form" onSubmit={handleCvUpload}>
                 <label
                   htmlFor="cv_file"
                   style={{
@@ -39,12 +171,13 @@ export default function CareerPage() {
                     <br />
                     Supports PDF, DOCX formats · NER model extracts your data
                   </p>
-                  <span className="btn btn-primary btn-sm">Browse File</span>
+                  <span className="btn btn-primary btn-sm">{uploading ? "Uploading…" : "Browse File"}</span>
                   <input
                     type="file"
                     id="cv_file"
                     name="cv_file"
                     accept=".pdf,.docx"
+                    onChange={(e) => e.target.form?.requestSubmit()}
                     style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }}
                   />
                 </label>
@@ -55,30 +188,48 @@ export default function CareerPage() {
               <div className="small-muted" style={{ marginBottom: 14 }}>
                 Step 2 — Skills Extracted (AI)
               </div>
-              <div className="flex-between" style={{ marginBottom: 12 }}>
-                <span className="small-muted">GPA</span>
-                <strong>3.6 / 4.0</strong>
-              </div>
-              <div className="small-muted" style={{ marginBottom: 6 }}>
-                Technical Skills
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <span className="chip">Python</span>
-                <span className="chip">Data Analysis</span>
-                <span className="chip">SQL</span>
-              </div>
-              <div className="small-muted" style={{ marginBottom: 6 }}>
-                Certifications
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <span className="chip">AWS Cloud Found.</span>
-              </div>
-              <div className="small-muted" style={{ marginBottom: 6 }}>
-                Projects
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <span className="chip">Sentiment Analyzer</span>
-              </div>
+              {extracted ? (
+                <>
+                  <div className="flex-between" style={{ marginBottom: 12 }}>
+                    <span className="small-muted">GPA</span>
+                    <strong>{extracted.gpa} / 4.0</strong>
+                  </div>
+                  <div className="small-muted" style={{ marginBottom: 6 }}>
+                    Technical Skills
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    {extracted.skills.map((skill) => (
+                      <span className="chip" key={skill}>
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="small-muted" style={{ marginBottom: 6 }}>
+                    Certifications
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    {extracted.certifications.map((cert) => (
+                      <span className="chip" key={cert}>
+                        {cert}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="small-muted" style={{ marginBottom: 6 }}>
+                    Projects
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    {extracted.projects.map((project) => (
+                      <span className="chip" key={project}>
+                        {project}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="small-muted" style={{ marginBottom: 14 }}>
+                  Upload a CV in Step 1 to see extracted skills here.
+                </p>
+              )}
               <button className="btn btn-outline btn-block btn-sm">Edit extracted info</button>
             </div>
 
@@ -89,7 +240,7 @@ export default function CareerPage() {
               <form id="career-goal-form" name="career-goal-form">
                 <div className="field">
                   <label htmlFor="career_goal">Your selected goal</label>
-                  <select id="career_goal" name="career_goal" required defaultValue="data_scientist">
+                  <select id="career_goal" name="career_goal" required value={careerGoal} onChange={handleGoalChange}>
                     <option value="data_scientist">◆ Data Scientist</option>
                     <option value="ml_engineer">ML Engineer</option>
                     <option value="business_analyst">Business Analyst</option>
@@ -101,14 +252,14 @@ export default function CareerPage() {
               <p className="small-muted text-center" style={{ margin: "0 0 12px" }}>
                 Or let AI suggest best fit →
               </p>
-              <button type="button" id="ai-suggest-career" className="btn btn-primary btn-block">
+              <button type="button" id="ai-suggest-career" className="btn btn-primary btn-block" onClick={handleAiSuggest}>
                 AI Suggest Best Career
               </button>
             </div>
           </div>
 
           <div className="small-muted" style={{ marginBottom: 14 }}>
-            Your Career Fit Rankings (AI — Top 5 of 50+ Paths · Model: all-mpnet-base-v2)
+            Your Career Fit Rankings (AI — Top 5 of 50+ Paths · Model: {rankings?.model ?? "…"})
           </div>
           <table className="data-table" style={{ marginBottom: 32 }}>
             <thead>
@@ -120,131 +271,108 @@ export default function CareerPage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Data Scientist</td>
-                <td>
-                  <span className="progress-track">
-                    <span className="progress-fill" style={{ width: "88%" }} />
-                  </span>
-                  88%
-                </td>
-                <td>Deep Learning, TensorFlow</td>
-                <td>
-                  <button className="btn btn-outline btn-sm">View Roadmap</button>
-                </td>
-              </tr>
-              <tr>
-                <td>ML Engineer</td>
-                <td>
-                  <span className="progress-track">
-                    <span className="progress-fill" style={{ width: "78%" }} />
-                  </span>
-                  78%
-                </td>
-                <td>TensorFlow, MLOps</td>
-                <td>
-                  <button className="btn btn-outline btn-sm">View Roadmap</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Business Analyst</td>
-                <td>
-                  <span className="progress-track">
-                    <span className="progress-fill warn" style={{ width: "66%" }} />
-                  </span>
-                  66%
-                </td>
-                <td>SQL, Tableau, Excel</td>
-                <td>
-                  <button className="btn btn-outline btn-sm">View Roadmap</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Software Engineer</td>
-                <td>
-                  <span className="progress-track">
-                    <span className="progress-fill warn" style={{ width: "58%" }} />
-                  </span>
-                  58%
-                </td>
-                <td>System Design, APIs</td>
-                <td>
-                  <button className="btn btn-outline btn-sm">View Roadmap</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Product Manager</td>
-                <td>
-                  <span className="progress-track">
-                    <span className="progress-fill low" style={{ width: "42%" }} />
-                  </span>
-                  42%
-                </td>
-                <td>Leadership, Strategy, UX</td>
-                <td>
-                  <button className="btn btn-outline btn-sm">View Roadmap</button>
-                </td>
-              </tr>
+              {rankings ? (
+                rankings.rankings.map((rank) => (
+                  <tr key={rank.career_id}>
+                    <td>{rank.title}</td>
+                    <td>
+                      <span className="progress-track">
+                        <span
+                          className={`progress-fill${PROGRESS_CLASS(rank.match_score)}`}
+                          style={{ width: `${rank.match_score}%` }}
+                        />
+                      </span>
+                      {rank.match_score}%
+                    </td>
+                    <td>{rank.key_skill_gap}</td>
+                    <td>
+                      <button className="btn btn-outline btn-sm" onClick={() => handleViewRoadmap(rank.career_id)}>
+                        View Roadmap
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="small-muted">
+                    Loading rankings…
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
-          <div className="small-muted" style={{ marginBottom: 16 }}>
-            6-Month Skill Roadmap — Data Scientist
+          <div id="roadmap-section" className="small-muted" style={{ marginBottom: 16 }}>
+            6-Month Skill Roadmap — {roadmap?.title ?? "…"}
           </div>
           <div className="timeline" style={{ marginBottom: 32 }}>
-            <div className="step is-complete" data-status="completed">
-              <div className="step-circle">1–2</div>
-              <p>
-                Python & Stats
-                <br />
-                <span className="small-muted">Fundamentals ✓</span>
-              </p>
-            </div>
-            <div className="step is-complete" data-status="completed">
-              <div className="step-circle">3</div>
-              <p>
-                ML Algorithms
-                <br />
-                <span className="small-muted">Scikit-learn ✓</span>
-              </p>
-            </div>
-            <div className="step is-current" data-status="in_progress">
-              <div className="step-circle">4</div>
-              <p>
-                Deep Learning
-                <br />
-                <span className="small-muted">TensorFlow (Current)</span>
-              </p>
-            </div>
-            <div className="step" data-status="pending">
-              <div className="step-circle">5</div>
-              <p>
-                Projects & RAG
-                <br />
-                <span className="small-muted">Portfolio</span>
-              </p>
-            </div>
-            <div className="step" data-status="pending">
-              <div className="step-circle">6</div>
-              <p>
-                Mock Interviews
-                <br />
-                <span className="small-muted">Job Applications</span>
-              </p>
-            </div>
+            {(roadmap?.steps ?? []).map((step) => (
+              <div
+                key={step.milestone_title}
+                className={`step${step.status === "completed" ? " is-complete" : step.status === "in_progress" ? " is-current" : ""}`}
+                data-status={step.status}
+              >
+                <div className="step-circle">{step.month_number}</div>
+                <p>
+                  {step.milestone_title}
+                  <br />
+                  <span className="small-muted">{step.description}</span>
+                </p>
+              </div>
+            ))}
           </div>
 
-          <div id="mock-interview" className="panel-tint flex-between">
-            <div>
-              <h4 style={{ margin: "0 0 4px" }}>Mock Interview Simulation</h4>
-              <p className="small-muted" style={{ margin: 0 }}>
-                Practice real interview questions for Data Scientist roles · Powered by RAG + Interview Knowledge
-                Base
-              </p>
+          <div id="mock-interview" className="panel-tint">
+            <div className="flex-between">
+              <div>
+                <h4 style={{ margin: "0 0 4px" }}>Mock Interview Simulation</h4>
+                <p className="small-muted" style={{ margin: 0 }}>
+                  Practice real interview questions for {roadmap?.title ?? "your target"} roles · Powered by RAG +
+                  Interview Knowledge Base
+                </p>
+              </div>
+              {!interview && (
+                <button
+                  type="button"
+                  id="start-mock-interview"
+                  className="btn btn-primary"
+                  onClick={handleStartInterview}
+                  disabled={interviewLoading}
+                >
+                  {interviewLoading ? "Starting…" : "Start Mock Interview →"}
+                </button>
+              )}
             </div>
-            <button type="button" id="start-mock-interview" className="btn btn-primary">
-              Start Mock Interview →
-            </button>
+
+            {interview && (
+              <div style={{ marginTop: 18 }}>
+                <p style={{ fontWeight: 600, marginBottom: 6 }}>Q: {interviewFeedback?.next_question ?? interview.question}</p>
+                {interviewFeedback && (
+                  <p className="small-muted" style={{ marginBottom: 14 }}>
+                    {interviewFeedback.ai_feedback}
+                  </p>
+                )}
+                <form onSubmit={handleInterviewAsk} className="flex-between" style={{ gap: 10 }}>
+                  <input
+                    type="text"
+                    value={interviewAnswer}
+                    onChange={(e) => setInterviewAnswer(e.target.value)}
+                    placeholder="Type your answer…"
+                    style={{
+                      flex: 1,
+                      padding: "12px 14px",
+                      border: "1px solid var(--border-soft)",
+                      borderRadius: 8,
+                      background: "var(--white)",
+                      fontSize: "0.92rem",
+                    }}
+                  />
+                  <button type="submit" className="btn btn-primary" disabled={interviewLoading}>
+                    Send
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </section>
