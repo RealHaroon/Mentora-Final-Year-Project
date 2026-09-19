@@ -17,6 +17,7 @@ const PROGRESS_CLASS = (score: number) => (score >= 75 ? "" : score >= 50 ? " wa
 
 export default function CareerPage() {
   const [extracted, setExtracted] = useState<CvUploadResponse | null>(null);
+  const [editingInfo, setEditingInfo] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [careerGoal, setCareerGoal] = useState("data_scientist");
 
@@ -59,11 +60,32 @@ export default function CareerPage() {
         headers: {}, // don't set Content-Type — the browser sets the multipart boundary itself
       });
       setExtracted(result);
+      setEditingInfo(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "CV upload failed");
     } finally {
       setUploading(false);
     }
+  }
+
+  function handleEditInfoSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!extracted) return;
+    const formData = new FormData(e.currentTarget);
+    const splitList = (value: FormDataEntryValue | null) =>
+      String(value ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    setExtracted({
+      ...extracted,
+      gpa: Number(formData.get("gpa")) || extracted.gpa,
+      skills: splitList(formData.get("skills")),
+      certifications: splitList(formData.get("certifications")),
+      projects: splitList(formData.get("projects")),
+    });
+    setEditingInfo(false);
   }
 
   async function handleGoalChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -188,7 +210,39 @@ export default function CareerPage() {
               <div className="small-muted" style={{ marginBottom: 14 }}>
                 Step 2 — Skills Extracted (AI)
               </div>
-              {extracted ? (
+              {extracted && editingInfo ? (
+                <form onSubmit={handleEditInfoSubmit}>
+                  <div className="field">
+                    <label htmlFor="gpa">GPA</label>
+                    <input id="gpa" name="gpa" type="number" step="0.1" min="0" max="4" defaultValue={extracted.gpa} />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="skills">Technical Skills (comma-separated)</label>
+                    <input id="skills" name="skills" defaultValue={extracted.skills.join(", ")} />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="certifications">Certifications (comma-separated)</label>
+                    <input id="certifications" name="certifications" defaultValue={extracted.certifications.join(", ")} />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="projects">Projects (comma-separated)</label>
+                    <input id="projects" name="projects" defaultValue={extracted.projects.join(", ")} />
+                  </div>
+                  <div className="flex-between" style={{ gap: 8 }}>
+                    <button type="submit" className="btn btn-primary btn-sm" style={{ flex: 1 }}>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      style={{ flex: 1 }}
+                      onClick={() => setEditingInfo(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : extracted ? (
                 <>
                   <div className="flex-between" style={{ marginBottom: 12 }}>
                     <span className="small-muted">GPA</span>
@@ -224,13 +278,15 @@ export default function CareerPage() {
                       </span>
                     ))}
                   </div>
+                  <button className="btn btn-outline btn-block btn-sm" onClick={() => setEditingInfo(true)}>
+                    Edit extracted info
+                  </button>
                 </>
               ) : (
                 <p className="small-muted" style={{ marginBottom: 14 }}>
                   Upload a CV in Step 1 to see extracted skills here.
                 </p>
               )}
-              <button className="btn btn-outline btn-block btn-sm">Edit extracted info</button>
             </div>
 
             <div className="panel">

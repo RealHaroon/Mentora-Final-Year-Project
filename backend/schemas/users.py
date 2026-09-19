@@ -22,3 +22,12 @@ class UserUpdate(BaseModel):
     last_name: str | None = None
     university: str | None = None
     exam_goal: ExamGoal | None = None
+
+
+class NotificationPrefs(BaseModel):
+    # Matches the 4 notification "type" values already shown on /dashboard
+    # (alert / ok / time / match) — see routers/notifications.py.
+    weak_topic_alerts: bool = True
+    content_updates: bool = True
+    session_reminders: bool = True
+    career_match_updates: bool = True

@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { apiFetch, ApiError } from "@/lib/api";
+import type { NotificationPrefs } from "@/lib/types";
 
-type Panel = null | "profile" | "password";
+type Panel = null | "profile" | "password" | "notifications";
+
+const DEFAULT_PREFS: NotificationPrefs = {
+  weak_topic_alerts: true,
+  content_updates: true,
+  session_reminders: true,
+  career_match_updates: true,
+};
 
 type DashboardSettingsProps = {
   initialFirstName: string;
@@ -22,11 +31,37 @@ export default function DashboardSettings({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
 
   function togglePanel(next: Panel) {
     setError(null);
     setSuccess(null);
     setPanel((current) => (current === next ? null : next));
+    if (next === "notifications" && prefs === null) {
+      apiFetch<NotificationPrefs>("/users/me/notification-prefs")
+        .then(setPrefs)
+        .catch(() => setPrefs(DEFAULT_PREFS));
+    }
+  }
+
+  async function handleNotificationPrefsSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!prefs) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const saved = await apiFetch<NotificationPrefs>("/users/me/notification-prefs", {
+        method: "PATCH",
+        body: JSON.stringify(prefs),
+      });
+      setPrefs(saved);
+      setSuccess("Notification preferences saved");
+      setPanel(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save your preferences");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleProfileSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -107,12 +142,12 @@ export default function DashboardSettings({
         <button className="btn btn-outline btn-sm" onClick={() => togglePanel("profile")}>
           👤 Account
         </button>
-        <button className="btn btn-outline btn-sm" disabled title="Not available yet">
+        <button className="btn btn-outline btn-sm" onClick={() => togglePanel("notifications")}>
           🔔 Notification Prefs
         </button>
-        <button className="btn btn-outline btn-sm" disabled title="Not available yet">
+        <Link href="/exam-prep" className="btn btn-outline btn-sm">
           📊 Study Preferences
-        </button>
+        </Link>
         <button className="btn btn-outline btn-sm" onClick={() => togglePanel("password")}>
           🔒 Change Password
         </button>
@@ -145,6 +180,52 @@ export default function DashboardSettings({
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Saving…" : "Save changes"}
           </button>
+        </form>
+      )}
+
+      {panel === "notifications" && (
+        <form onSubmit={handleNotificationPrefsSubmit} className="panel mt-24">
+          {prefs === null ? (
+            <p className="small-muted">Loading…</p>
+          ) : (
+            <>
+              <label className="mcq-option">
+                <input
+                  type="checkbox"
+                  checked={prefs.weak_topic_alerts}
+                  onChange={(e) => setPrefs({ ...prefs, weak_topic_alerts: e.target.checked })}
+                />{" "}
+                Weak-topic alerts (e.g. "flagged at risk")
+              </label>
+              <label className="mcq-option">
+                <input
+                  type="checkbox"
+                  checked={prefs.content_updates}
+                  onChange={(e) => setPrefs({ ...prefs, content_updates: e.target.checked })}
+                />{" "}
+                Content updates (new playlists, materials)
+              </label>
+              <label className="mcq-option">
+                <input
+                  type="checkbox"
+                  checked={prefs.session_reminders}
+                  onChange={(e) => setPrefs({ ...prefs, session_reminders: e.target.checked })}
+                />{" "}
+                Session reminders
+              </label>
+              <label className="mcq-option">
+                <input
+                  type="checkbox"
+                  checked={prefs.career_match_updates}
+                  onChange={(e) => setPrefs({ ...prefs, career_match_updates: e.target.checked })}
+                />{" "}
+                Career match updates
+              </label>
+              <button type="submit" className="btn btn-primary mt-24" disabled={loading}>
+                {loading ? "Saving…" : "Save preferences"}
+              </button>
+            </>
+          )}
         </form>
       )}
 

@@ -158,6 +158,20 @@ export interface PlaylistVideo {
   source: string;
   duration_min: number;
   note: string;
+  video_url: string;
+}
+
+export interface WatchHistoryItem {
+  title: string;
+  subject: string;
+  watched_at: string;
+}
+
+export interface NotificationPrefs {
+  weak_topic_alerts: boolean;
+  content_updates: boolean;
+  session_reminders: boolean;
+  career_match_updates: boolean;
 }
 
 export interface Assignment {

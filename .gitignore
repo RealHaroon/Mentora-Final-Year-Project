@@ -1,2 +1,7 @@
 /run/media/haroon/Local Disk (D:)/Github/Mentora-Final-Year-Project/frontend/node_modules
 CLAUDE.md
+
+# Phase 3 dataset outputs — raw/Kaggle/O*NET data has its own licensing terms
+# and doesn't belong in git; upload mentora_data/ to Google Drive for Phase 4
+# Colab notebooks instead. Scripts that produce it live in datasets/.
+mentora_data/

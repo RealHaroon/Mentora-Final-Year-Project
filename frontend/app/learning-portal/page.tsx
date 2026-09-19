@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import PlaylistSection from "@/components/PlaylistSection";
+import MaterialsSection from "@/components/MaterialsSection";
+import WatchHistorySection from "@/components/WatchHistorySection";
 import { apiFetchServer } from "@/lib/api";
 import type { Assignment, LearningStats, Material, PlaylistVideo } from "@/lib/types";
 
@@ -10,12 +13,22 @@ export const metadata: Metadata = {
   title: "Learning Portal",
 };
 
-async function loadPortalData() {
+// Without this, Next's client Router Cache can serve a stale render when only
+// the ?subject= query string changes via <Link> (same pathname), even though
+// the server itself filters correctly on every direct request.
+export const dynamic = "force-dynamic";
+
+const SUBJECT_FILTERS = ["Mathematics", "English", "Physics", "Chemistry"];
+
+async function loadPortalData(subject?: string) {
   const token = cookies().get("mentora_session")?.value;
   try {
     const [stats, playlist, assignments, materials] = await Promise.all([
       apiFetchServer<LearningStats>("/learning/stats", token),
-      apiFetchServer<{ videos: PlaylistVideo[] }>("/learning/playlist", token),
+      apiFetchServer<{ videos: PlaylistVideo[] }>(
+        `/learning/playlist${subject ? `?subject=${encodeURIComponent(subject)}` : ""}`,
+        token
+      ),
       apiFetchServer<{ assignments: Assignment[] }>("/learning/assignments", token),
       apiFetchServer<{ materials: Material[] }>("/learning/materials", token),
     ]);
@@ -25,8 +38,13 @@ async function loadPortalData() {
   }
 }
 
-export default async function LearningPortalPage() {
-  const { stats, videos, assignments, materials, error } = await loadPortalData();
+export default async function LearningPortalPage({
+  searchParams,
+}: {
+  searchParams: { subject?: string };
+}) {
+  const activeSubject = searchParams.subject;
+  const { stats, videos, assignments, materials, error } = await loadPortalData(activeSubject);
 
   return (
     <>
@@ -38,7 +56,9 @@ export default async function LearningPortalPage() {
             <h1>Learning Portal</h1>
             <p>Your personal playlists, MCQ assignments, and course materials — all in one place</p>
           </div>
-          <button className="btn btn-primary">Upload Content</button>
+          <a href="#materials" className="btn btn-primary">
+            Upload Content
+          </a>
         </div>
       </section>
 
@@ -72,64 +92,51 @@ export default async function LearningPortalPage() {
           <div className="layout-sidebar">
             <aside className="side-nav-block">
               <div className="group-label">My Content</div>
-              <a href="#" className="side-link active">
+              <a href="#playlists" className="side-link active">
                 My Playlists <span className="count-badge">{videos.length}</span>
               </a>
-              <a href="#" className="side-link">
+              <a href="#assignments" className="side-link">
                 MCQ Assignments <span className="count-badge">{assignments.filter((a) => a.status === "new").length}</span>
               </a>
-              <a href="#" className="side-link">
+              <a href="#materials" className="side-link">
                 Course PDFs
               </a>
-              <a href="#" className="side-link">
+              <a href="#watch-history" className="side-link">
                 Watch History
               </a>
               <div className="group-label">Filter by Subject</div>
-              <a href="#" className="side-link">
-                Mathematics
-              </a>
-              <a href="#" className="side-link">
-                English
-              </a>
-              <a href="#" className="side-link">
-                Physics
-              </a>
-              <a href="#" className="side-link">
-                Chemistry
-              </a>
+              {SUBJECT_FILTERS.map((subject) => (
+                // Plain <a>, not next/link: Next's client Router Cache can
+                // serve a stale render when only ?subject= changes on the
+                // same pathname, so force a real full-page navigation here.
+                <a
+                  key={subject}
+                  href={activeSubject === subject ? "/learning-portal#playlists" : `/learning-portal?subject=${subject}#playlists`}
+                  className={`side-link${activeSubject === subject ? " active" : ""}`}
+                >
+                  {subject}
+                </a>
+              ))}
+              {activeSubject && (
+                <a href="/learning-portal" className="side-link small-muted">
+                  Clear filter ✕
+                </a>
+              )}
               <div className="group-label">Tools</div>
-              <a href="#" className="side-link">
+              <Link href="/exam-prep#topic-explainer" className="side-link">
                 AI Topic Explainer
-              </a>
-              <a href="#" className="side-link">
+              </Link>
+              <a href="#materials" className="side-link">
                 Download All
               </a>
             </aside>
 
             <div>
-              <div className="flex-between" style={{ marginBottom: 14 }}>
-                <h3 style={{ fontFamily: "var(--font-display)", margin: 0 }}>My Video Playlists</h3>
-                <button className="btn btn-primary btn-sm">Add Video</button>
-              </div>
+              <PlaylistSection initialVideos={videos} />
 
-              {videos.map((video) => (
-                <div className="media-row" key={video.title}>
-                  <div className="media-thumb" />
-                  <div className="media-info">
-                    <h4>{video.title}</h4>
-                    <span className="tag-subject">{video.subject}</span>
-                    <div className="meta">
-                      {video.source} · {video.duration_min} min · {video.note}
-                    </div>
-                  </div>
-                  <div className="media-actions">
-                    <button className="btn btn-primary btn-sm">Watch</button>
-                    <button className="btn btn-outline btn-sm">Remove</button>
-                  </div>
-                </div>
-              ))}
-
-              <h3 style={{ fontFamily: "var(--font-display)", margin: "28px 0 14px" }}>MCQ Assignments</h3>
+              <h3 id="assignments" style={{ fontFamily: "var(--font-display)", margin: "28px 0 14px", scrollMarginTop: 90 }}>
+                MCQ Assignments
+              </h3>
               <div className="grid-2" style={{ marginBottom: 28 }}>
                 {assignments.map((assignment) => (
                   <div className="panel" key={assignment.title}>
@@ -159,18 +166,9 @@ export default async function LearningPortalPage() {
                 ))}
               </div>
 
-              <h3 style={{ fontFamily: "var(--font-display)", margin: "28px 0 14px" }}>Course PDFs</h3>
-              <div className="grid-3">
-                {materials.map((material) => (
-                  <div className="panel" key={material.id}>
-                    <h4 style={{ margin: "0 0 6px" }}>{material.title}</h4>
-                    <p className="small-muted" style={{ margin: "0 0 14px" }}>
-                      {material.size} · {material.source}
-                    </p>
-                    <button className="btn btn-outline btn-block btn-sm">Download</button>
-                  </div>
-                ))}
-              </div>
+              <MaterialsSection initialMaterials={materials} />
+
+              <WatchHistorySection />
             </div>
           </div>
         </div>

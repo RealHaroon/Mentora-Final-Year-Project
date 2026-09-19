@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from database.models import User
 from database.session import get_db
-from schemas.users import UserOut, UserUpdate
+from schemas.users import NotificationPrefs, UserOut, UserUpdate
 from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -32,3 +32,19 @@ def update_me(
 def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db.delete(current_user)
     db.commit()
+
+
+@router.get("/me/notification-prefs", response_model=NotificationPrefs)
+def get_notification_prefs(current_user: User = Depends(get_current_user)):
+    return NotificationPrefs(**(current_user.notification_prefs or {}))
+
+
+@router.patch("/me/notification-prefs", response_model=NotificationPrefs)
+def update_notification_prefs(
+    payload: NotificationPrefs,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.notification_prefs = payload.model_dump()
+    db.commit()
+    return payload

@@ -30,6 +30,9 @@ class User(Base):
     reset_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
     reset_code_expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
+    # Also not in the original ERD — per-user notification toggle settings.
+    notification_prefs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     sip: Mapped["StudentIntelligenceProfile"] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )

@@ -5,13 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import models  # noqa: F401 — registers models on Base before create_all
-from database.session import Base, engine
+from database.session import Base, engine, run_additive_migrations
 from routers import auth, career, dashboard, exam, interview, learning, notifications, users
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    run_additive_migrations()
     yield
 
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -32,9 +33,15 @@ export default function ExamPrepPage() {
   const [mcqResult, setMcqResult] = useState<McqSubmitResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [addedVideos, setAddedVideos] = useState<string[]>([]);
 
   useEffect(() => {
-    Promise.all([
+    loadAll();
+  }, []);
+
+  function loadAll() {
+    return Promise.all([
       apiFetch<TimetableResponse>("/exam/timetable"),
       apiFetch<TodayTopicResponse>("/exam/today-topic"),
       apiFetch<McqResponse>("/exam/mcq"),
@@ -45,7 +52,33 @@ export default function ExamPrepPage() {
         setMcq(mcqRes);
       })
       .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load this right now"));
-  }, []);
+  }
+
+  async function handleRegenerate(e: React.MouseEvent) {
+    e.preventDefault();
+    setRegenerating(true);
+    setLoadError(null);
+    await loadAll();
+    setRegenerating(false);
+  }
+
+  async function handleAddToPlaylist(video: { title: string; source: string; duration_min: number }) {
+    const primarySubject = SUBJECTS.find((s) => s.id === selectedSubjects[0])?.label ?? "Mathematics";
+    try {
+      await apiFetch("/learning/playlist", {
+        method: "POST",
+        body: JSON.stringify({
+          title: video.title,
+          subject: primarySubject,
+          source: video.source,
+          duration_min: video.duration_min,
+        }),
+      });
+      setAddedVideos((prev) => [...prev, video.title]);
+    } catch (err) {
+      setLoadError(err instanceof ApiError ? err.message : "Couldn't add that video");
+    }
+  }
 
   async function savePreferences(next: { subjects?: string[]; test_date?: string; study_mode?: string }) {
     try {
@@ -102,7 +135,9 @@ export default function ExamPrepPage() {
             <h1>Sindh University Entry Test Prep</h1>
             <p>AI-generated timetable · Auto-updated daily</p>
           </div>
-          <button className="btn btn-primary">Upload Content</button>
+          <Link href="/learning-portal#materials" className="btn btn-primary">
+            Upload Content
+          </Link>
         </div>
       </section>
 
@@ -179,8 +214,8 @@ export default function ExamPrepPage() {
 
           <div className="flex-between" style={{ marginBottom: 14 }}>
             <h3 style={{ fontFamily: "var(--font-display)", margin: 0 }}>AI-Generated Study Timetable</h3>
-            <a href="#" className="link-inline">
-              Regenerate
+            <a href="#" className="link-inline" onClick={handleRegenerate}>
+              {regenerating ? "Regenerating…" : "Regenerate"}
             </a>
           </div>
 
@@ -221,7 +256,7 @@ export default function ExamPrepPage() {
             {todayTopic ? `Today's Topic: ${todayTopic.topic}` : "Today's Topic"}
           </h3>
           <div className="grid-3">
-            <div className="panel">
+            <div id="topic-explainer" className="panel" style={{ scrollMarginTop: 90 }}>
               <div className="small-muted" style={{ marginBottom: 8 }}>
                 AI Topic Explainer
               </div>
@@ -258,7 +293,13 @@ export default function ExamPrepPage() {
                 <p className="small-muted" style={{ margin: "0 0 14px" }}>
                   {video.source} · {video.duration_min} min · AI-matched
                 </p>
-                <button className="btn btn-outline btn-block">+ Add to Playlist</button>
+                <button
+                  className="btn btn-outline btn-block"
+                  disabled={addedVideos.includes(video.title)}
+                  onClick={() => handleAddToPlaylist(video)}
+                >
+                  {addedVideos.includes(video.title) ? "Added ✓" : "+ Add to Playlist"}
+                </button>
               </div>
             ))}
           </div>
