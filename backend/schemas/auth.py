@@ -10,6 +10,7 @@ class ExamGoal(str, Enum):
     karachi_university = "karachi_university"
     iqra_university = "iqra_university"
     tando_jam_university = "tando_jam_university"
+    mdcat = "mdcat"
     pms_spsc_ppsc = "pms_spsc_ppsc"
     issb = "issb"
     army_navy_paf = "army_navy_paf"

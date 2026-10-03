@@ -157,6 +157,9 @@ export default function RegisterPage() {
               <option value="iqra_university">Iqra University</option>
               <option value="tando_jam_university">Tando Jam University</option>
             </optgroup>
+            <optgroup label="Medical College Entry Tests">
+              <option value="mdcat">MDCAT (Sindh)</option>
+            </optgroup>
             <optgroup label="Job / Competitive Tests">
               <option value="pms_spsc_ppsc">PMS / SPSC / PPSC</option>
               <option value="issb">ISSB</option>
