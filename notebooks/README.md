@@ -31,6 +31,12 @@ model downloads and training loops themselves.
 | 4 | `train_m5.ipynb` | CV/Transcript NER | Entity F1 ≥ 0.82 |
 | 5 | `train_m2.ipynb` | Question Generator (FLAN-T5+LoRA) | BLEU-4 ≥ 0.35, ROUGE-L ≥ 0.50 |
 
+**Attempt-1 status (see "Fixed" sections below for what changed):** M4
+(Precision@5 = 0.779) and M5 (Entity F1 = 0.9497) already passed — no need
+to re-run either unless you want to for completeness. M3, M1, and M2 all
+need a re-run: M3 and M1 missed their targets and got notebook changes, M2
+had a real training bug and its first run's result is invalid.
+
 M3/M4/M1/M5 combined should take a couple of days of elapsed time (not
 continuous GPU time); M2 is the heavy one and is explicitly saved for last,
 per the plan's own estimate of "2-4 weeks, dominated by M2."
@@ -56,6 +62,97 @@ first markdown cell documents its own adaptations; the two that matter most:
 - **M5**'s gold evaluation set is auto-tagged, not hand-corrected yet. Do
   that manual review (see `mentora_data/labeled/m5/gold_review.csv`) before
   trusting the Entity F1 number as final.
+
+## Fixed: "error: externally-managed-environment" on the `!pip install` cell
+
+Colab's base image now enforces the same PEP 668 protection regular
+Debian/Ubuntu does, which normally blocks a plain `pip install` outside a
+venv. Since a Colab VM is fully ephemeral (wiped at the end of every
+session), there's no real "system" worth protecting here — added
+`--break-system-packages` to every `!pip install` line across all 5
+notebooks. If you pulled a notebook before this fix and hit this error, just
+add `--break-system-packages` to the end of the failing `!pip install` line
+and re-run.
+
+## Fixed: "ValueError: Attempting to unscale FP16 gradients"
+
+Hit this on the first real training run (M1). Root cause: newer
+`transformers`/Hub versions can load a model's weights in whatever dtype
+they're stored in (often fp16, to save bandwidth) instead of always
+upcasting to fp32 on `from_pretrained()`. Combined with `fp16=True` in
+`TrainingArguments` (which expects fp32 parameters so it can scale/unscale
+fp16 *computation* correctly), that produces exactly this error. Fixed in
+**M1, M5, and M2** (the three notebooks using `fp16=True`) by explicitly
+passing `torch_dtype=torch.float32` to the base model's `from_pretrained()`
+call — parameters stay fp32, autocast still gives fp16 speed on the actual
+forward/backward computation, which is the correct mixed-precision recipe.
+If you pulled these notebooks before this fix, re-download them.
+
+## Fixed: M2 training_loss stuck at 0.0 / eval_loss NaN / near-zero BLEU-ROUGE
+
+The first real M2 training run reported `training_loss: 0.0` for the entire
+3-epoch run and `eval_loss: nan`, with BLEU-4=0.082 / ROUGE-L=0.145 (target
+≥0.35 / ≥0.50). Root cause: the `tokenize()` cell built `labels` directly
+from the tokenizer's padded `target_text` output, never masking padding
+positions to `-100`. T5's loss is plain `CrossEntropyLoss`, which does *not*
+automatically ignore the pad token — so the model could trivially drive
+training loss toward 0 by learning to predict PAD for the ~70% of each
+256-token target that's just padding, without ever learning real question
+content. This bug was copied verbatim from the plan doc's own §6.3 example,
+which has the same issue.
+
+Fixed in `train_m2.ipynb`'s tokenize cell by replacing pad-token positions
+in `labels` with `-100` before assigning them. **If you already ran the
+buggy version**, the training cell auto-resumes from any checkpoint under
+`mentora_models/model2_question_generator/checkpoint-*` on Drive — delete
+or rename that folder before re-running, otherwise it'll resume from
+checkpoints trained on the broken labels instead of starting fresh.
+
+## Fixed: M3 missed MAE target (5.689 vs <=5.0)
+
+Attempt 1 (hidden_size=128, 2 LSTM layers) came in just short. Bumped to
+hidden_size=256, 3 layers, per the plan doc's own troubleshooting list.
+**If you ran attempt 1**, delete `mentora_models/model3_trajectory_predictor/checkpoint.pt`
+on Drive before re-running — it was saved with the old architecture's
+shape and won't load into the bigger model.
+
+## Fixed (partially): M1 missed F1 target badly (0.4352 vs >=0.85)
+
+This one isn't a code bug — it's heuristic topic labels from
+`tag_topics.py`: 30 classes, several with under 10 examples (one with only
+3), 67% of MDCAT rows falling back to a generic "General &lt;Subject&gt;"
+bucket. No hyperparameter change fixes a class with 3 training examples.
+
+Two mitigations applied, **chosen deliberately as a partial fix, not a full
+one** — closing the rest of the gap needs the MDCAT questions' topics
+hand-corrected, which is real manual work:
+- `datasets/m1_gap_classifier/merge_rare_topics.py` folds any topic with
+  fewer than 25 examples into its subject's General bucket (30 -> 20
+  classes, all now >=25). Also re-ran `build_training_data.py` for M2 so
+  its prompts reflect the merged labels.
+- The training cell now uses a `WeightedTrainer` subclass with
+  inverse-frequency class weighting, so the classifier isn't just learning
+  to always predict the biggest classes.
+
+Attempt 3 (merge + class weighting, run correctly this time) landed at F1
+micro = 0.4691 / macro = 0.4412 — better, but still well short of 0.85. The
+remaining gap is the heuristic topic labels themselves, not hyperparameters.
+
+## New: `retag_m1_zeroshot.ipynb` — replacing keyword tags with zero-shot
+
+Re-tags the 1777 MDCAT rows with `facebook/bart-large-mnli` zero-shot
+classification against each subject's real topic list, instead of
+`tag_topics.py`'s substring-keyword matching. Writes
+`question_bank_final_zeroshot.csv` alongside the original (never
+overwrites it) plus a `zeroshot_retag_review.csv` with confidence scores
+for spot-checking. Run this, review the spot-check cell's output, then:
+
+1. Download `question_bank_final_zeroshot.csv` from Drive.
+2. Run `merge_rare_topics.py` against it locally as a safety net (zero-shot
+   may still leave some topic under the 25-example floor).
+3. Replace your local `question_bank_final.csv` with the result, re-upload
+   to Drive, delete `mentora_models/model1_gap_classifier/checkpoint-*`
+   (label set will change again), and re-run `train_m1.ipynb` for attempt 4.
 
 ## Disconnect-safety
 
