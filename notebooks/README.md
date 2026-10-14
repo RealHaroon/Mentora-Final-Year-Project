@@ -108,6 +108,37 @@ buggy version**, the training cell auto-resumes from any checkpoint under
 or rename that folder before re-running, otherwise it'll resume from
 checkpoints trained on the broken labels instead of starting fresh.
 
+**This fix alone wasn't enough** — attempt 2 (with the label-masking fix
+correctly in place) hit the exact same `training_loss: 0.0` / `eval_loss:
+nan` symptom again. Root cause #2: T5/FLAN-T5 is well-documented as
+numerically unstable under fp16 mixed-precision training, independent of
+the labels bug. Multiple HuggingFace forum threads report this exact
+signature for T5-family models specifically:
+- https://discuss.huggingface.co/t/t5-variants-return-training-loss-0-and-validation-loss-nan-while-fine-tuning/30839
+- https://discuss.pytorch.org/t/training-loss-0-0-validation-loss-nan/168467
+- https://discuss.huggingface.co/t/training-loss-is-zero-from-the-first-step-and-model-generation-is-empty-after-training/72359
+
+Fixed by setting `fp16=False` in `train_m2.ipynb`'s `Seq2SeqTrainingArguments`.
+T4 GPUs (Colab's free tier) also lack efficient native bf16, so plain fp32
+is the safe choice here — the LoRA adapter is only 2.3M trainable params
+out of 785M, so this will be slower but numerically correct. **Delete
+`mentora_models/model2_question_generator/checkpoint-*` on Drive again**
+before this re-run too (attempt 2's checkpoints were trained with fp16).
+
+## Fixed: M2 BLEU-4/ROUGE-L still near-zero after both fixes above
+
+Attempt 2 (both fixes above correctly in place) resolved the 0.0/NaN
+symptom — `training_loss: 8.53`, `eval_loss: 1.76`, both real numbers — but
+BLEU-4/ROUGE-L barely moved (0.085 / 0.157). Root cause #3: the eval step's
+`.generate()` call was using the "model-agnostic default" `max_length=21`
+(visible as a `UserWarning` in the training cell's output), truncating
+every generated prediction to 21 tokens — while `target_text` is tokenized
+up to 256 tokens. Comparing a 21-token fragment against a full-length
+reference tanks BLEU/ROUGE regardless of how well the model actually
+learned. Fixed by setting `generation_max_length=256` in
+`Seq2SeqTrainingArguments`. **Delete the Drive checkpoint folder again**
+before this re-run.
+
 ## Fixed: M3 missed MAE target (5.689 vs <=5.0)
 
 Attempt 1 (hidden_size=128, 2 LSTM layers) came in just short. Bumped to
