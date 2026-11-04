@@ -31,11 +31,16 @@ model downloads and training loops themselves.
 | 4 | `train_m5.ipynb` | CV/Transcript NER | Entity F1 ≥ 0.82 |
 | 5 | `train_m2.ipynb` | Question Generator (FLAN-T5+LoRA) | BLEU-4 ≥ 0.35, ROUGE-L ≥ 0.50 |
 
-**Attempt-1 status (see "Fixed" sections below for what changed):** M4
-(Precision@5 = 0.779) and M5 (Entity F1 = 0.9497) already passed — no need
-to re-run either unless you want to for completeness. M3, M1, and M2 all
-need a re-run: M3 and M1 missed their targets and got notebook changes, M2
-had a real training bug and its first run's result is invalid.
+**Status (see "Fixed" sections below for what changed):** M4 (Precision@5 =
+0.779) and M5 (Entity F1 = 0.9497) passed — no need to re-run. **M3 is
+finalized at MAE = 5.69-5.98** (four attempts, see below — this is an
+accepted, documented limitation, not something that needs another re-run).
+M1 is finalized at F1 micro = 0.4691 (also a documented limitation — see
+`experiment_log.md`). **M2 is finalized at BLEU-4 = 12.13 / ROUGE-L =
+0.172** (attempt 4, below target but the first bug-free, trustworthy
+result — see `experiment_log.md`). All five models now have a final,
+honestly-documented number; none need further re-runs unless you want to
+push further on M1/M2/M3's known limitations.
 
 M3/M4/M1/M5 combined should take a couple of days of elapsed time (not
 continuous GPU time); M2 is the heavy one and is explicitly saved for last,
@@ -139,13 +144,51 @@ learned. Fixed by setting `generation_max_length=256` in
 `Seq2SeqTrainingArguments`. **Delete the Drive checkpoint folder again**
 before this re-run.
 
-## Fixed: M3 missed MAE target (5.689 vs <=5.0)
+## Resolved: M2 final result (attempt 4, all three bugs fixed)
 
-Attempt 1 (hidden_size=128, 2 LSTM layers) came in just short. Bumped to
-hidden_size=256, 3 layers, per the plan doc's own troubleshooting list.
-**If you ran attempt 1**, delete `mentora_models/model3_trajectory_predictor/checkpoint.pt`
-on Drive before re-running — it was saved with the old architecture's
-shape and won't load into the bigger model.
+Attempt 4 hit one more snag worth documenting: the training cell's
+auto-resume logic found a leftover `checkpoint-366` from attempt 3 still on
+Drive and silently skipped training entirely (`train_runtime: 0.0163`,
+`training_loss: 0.0` again — looked identical to the original bug but was
+actually just an instant no-op resume). Caught via the suspiciously-instant
+runtime, confirmed by the resumed eval's `eval_loss` matching attempt 3's
+exactly to 13 decimal places. Deleted the stale checkpoint, reloaded a
+fresh base model + LoRA init (the in-memory model had attempt 3's weights
+loaded into it by the resume), and retrained from scratch.
+
+**Real, final, bug-free result**: `training_loss: 8.52` (healthy),
+`eval_loss: 1.72`, `eval_bleu4: 12.13` (sacrebleu's native 0-100 scale,
+≈0.121 on a 0-1 scale), `eval_rougeL: 0.172`. Still below target (BLEU-4
+≥0.35, ROUGE-L ≥0.50 — roughly a third of the way there on both), but this
+is the first number that reflects actual model/data quality rather than a
+bug. `lora_adapter/` saved to Drive. If pushing further: try `r=16` for
+more LoRA capacity, or grow/improve the M1 question bank that M2's training
+data is built from (see `datasets/m2_question_generator/build_training_data.py`)
+— quality of the underlying 2155 examples is more likely the ceiling than
+model capacity at this point.
+
+## Resolved (as a documented limitation): M3 missed MAE target (4 attempts)
+
+Attempt 1 (hidden_size=128, 2 LSTM layers, SEQ_LEN=5) came in just short at
+5.689. Per the plan doc's own troubleshooting list, tried hidden_size=256/3
+layers (attempt 2: **5.975**, worse) and SEQ_LEN=7 (attempt 3: **5.872**,
+also worse). A 4th run reverting to attempt 1's exact config (before a seed
+was fixed) landed at **5.879** — a different number from attempt 1 despite
+identical hyperparameters, because **the notebook never set a random seed**.
+That alone explains most of the apparent "architecture effect": run-to-run
+noise (weight init + train/val split) spans almost the whole 5.69-5.98
+range we'd been attributing to hyperparameters.
+
+**Conclusion: this is very likely an irreducible noise floor in the
+synthetic data** (`datasets/m3_trajectory/generate_synthetic.py`'s
+per-session noise), not a model problem — consistent with every config
+tried landing in the same narrow band regardless of capacity or window
+size. `train_m3.ipynb` now sets `torch.manual_seed(42)` for reproducibility
+and is reverted to attempt 1's architecture (no worse than the
+alternatives, simplest/fastest). **M3 is finalized at MAE ≈ 5.7-5.9** —
+documented as a limitation in `experiment_log.md`, not something that needs
+further re-running unless you want to attack the synthetic generator's
+noise level directly.
 
 ## Fixed (partially): M1 missed F1 target badly (0.4352 vs >=0.85)
 
