@@ -6,3 +6,16 @@ bcrypt
 python-multipart
 pydantic-settings
 email-validator
+
+# Phase 6 — Model Manager + real inference (ml_core/). torch is CPU-only;
+# install from https://download.pytorch.org/whl/cpu to avoid pulling CUDA.
+torch
+transformers
+sentence-transformers
+psutil
+pdfplumber
+python-docx
+
+# Dev/test only
+pytest
+httpx

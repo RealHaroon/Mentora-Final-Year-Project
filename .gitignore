@@ -5,3 +5,9 @@ CLAUDE.md
 # and doesn't belong in git; upload mentora_data/ to Google Drive for Phase 4
 # Colab notebooks instead. Scripts that produce it live in datasets/.
 mentora_data/
+
+# Phase 4/5 trained model artifacts (~3.6GB) and their packaged Phase 5/6 form
+# (~2.5GB) — binary weights, don't belong in git. Download from Google Drive
+# per docs/phases/MENTORA_Phase5_Export_Optimize_UPDATED.md instead.
+mentora_models/
+ml_models/

@@ -1,0 +1,9 @@
+{
+  "0": "B-CERT",
+  "1": "B-DEGREE",
+  "2": "B-GPA",
+  "3": "B-SKILL",
+  "4": "I-CERT",
+  "5": "I-SKILL",
+  "6": "O"
+}
