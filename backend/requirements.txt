@@ -16,6 +16,15 @@ psutil
 pdfplumber
 python-docx
 
+# Phase 7 — RAG pipeline. Cloud LLM (Groq), not local Ollama — see
+# docs/phases/MENTORA_Phase7_RAG_Pipeline.md's header note for why.
+langchain
+langchain-text-splitters
+langchain-groq
+langchain-chroma
+chromadb
+python-frontmatter
+
 # Dev/test only
 pytest
 httpx

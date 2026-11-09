@@ -6,14 +6,17 @@ from sqlalchemy.orm import Session
 from database.models import Question, TopicScore, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
+from rag_core.exam_rag import ExamRAG
 from schemas.exam import McqSubmit, SubjectsUpdate
 from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/exam", tags=["exam"])
 
-# Endpoints below not yet wired to a real model (unchanged from Phase 2 mock):
-# /timetable and /today-topic depend on the RAG/content pipeline (Phase 7+),
-# not the Model Manager. /subjects still has nowhere real to persist to.
+_exam_rag = ExamRAG()
+
+# /timetable still mock — depends on the exam-prep scheduling feature, not
+# the Model Manager or the RAG pipeline. /subjects still has nowhere real
+# to persist to.
 
 
 @router.get("/timetable")
@@ -43,6 +46,15 @@ def get_today_topic(user: User = Depends(get_current_user)):
             {"title": "Quadratic Formula — Step by Step", "source": "Khan Academy", "duration_min": 12},
         ],
     }
+
+
+@router.get("/topic-explainer")
+async def topic_explainer(query: str, user: User = Depends(get_current_user)):
+    # Phase 7 — ExamRAG (grounded in rag_pipelines/exam_rag/content/, Groq
+    # for generation). Separate from /today-topic above, which is a fixed
+    # structured panel (summary + points + videos), not a free-text Q&A.
+    answer = await _exam_rag.answer(query)
+    return {"answer": answer}
 
 
 @router.get("/mcq")

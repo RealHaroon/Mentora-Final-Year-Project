@@ -26,5 +26,11 @@ class Settings(BaseSettings):
     topics_json: str = "./data/topics.json"
     m5_id2tag_json: str = "./data/m5_id2tag.json"
 
+    # Phase 7 — RAG pipeline. Cloud LLM (Groq) instead of local Ollama — see
+    # docs/phases/MENTORA_Phase7_RAG_Pipeline.md's header note for why.
+    groq_api_key: str = ""
+    groq_model: str = "openai/gpt-oss-120b"
+    chroma_path: str = "../vector_store"
+
 
 settings = Settings()

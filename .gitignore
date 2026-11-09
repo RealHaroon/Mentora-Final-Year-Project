@@ -11,3 +11,7 @@ mentora_data/
 # per docs/phases/MENTORA_Phase5_Export_Optimize_UPDATED.md instead.
 mentora_models/
 ml_models/
+
+# Phase 7 — ChromaDB's persistent on-disk store (embeddings + SQLite index).
+# Rebuildable from rag_pipelines/*/content/ via each KB's ingest.py.
+vector_store/

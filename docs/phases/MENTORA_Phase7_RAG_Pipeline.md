@@ -8,6 +8,21 @@ conceptually different from Phase 6 — no training happened for this one, it's 
 entirely from off-the-shelf pieces (Ollama + ChromaDB + LangChain) wired together.
 Estimated time: 5–8 days, most of it spent on content curation (§3), not code.*
 
+> **Implementation note — Ollama swapped for Groq (cloud).** This doc's
+> sections §1 (install Ollama), §9's `heavy_lock` rationale for generation, and
+> §13's `num_ctx`/`num_predict` tuning all assume a locally-hosted LLM. The
+> user explicitly chose a cloud API instead — bandwidth/time constraints
+> ruled out the ~2-3GB `ollama pull` that evening, and a direct tradeoff was
+> made: "working matters more than 'is it offline'", given this hardware's
+> expected single-digit-tokens/second local inference (§1.3) vs. Groq's
+> sub-2-second round trips in practice. Concretely: `backend/rag_core/
+> pipeline.py` calls `ChatGroq.ainvoke()` instead of `OllamaLLM.invoke()`,
+> and generation is NOT routed through Phase 6's `heavy_lock` semaphore —
+> that lock exists to stop two CPU-bound jobs fighting over this laptop's
+> cores, which doesn't apply to a call that runs on Groq's servers.
+> Retrieval (local ChromaDB + its embedding model) still goes through
+> `asyncio.to_thread`, same as always. See §15 for what changed concretely.
+
 ---
 
 ## 0. What RAG is actually solving here, and why it's not "just call the LLM"
@@ -612,23 +627,79 @@ memory-watchdog habit, now for time instead of RAM, and it's what tells you whet
 
 ## 15. Definition of done
 
-- [ ] `ollama run phi4-mini "..."` works from the command line, and the fallback
-      models are pulled and ready even if not the default
-- [ ] All three `content/` folders populated with real curated documents (§3) —
-      this is the item most worth double-checking isn't skipped or rushed
-- [ ] `ingest.py` run successfully for all three knowledge bases; §6.1's manual
-      retrieval check confirms sensible top-k results for several test queries per KB
-- [ ] `RAGPipeline` base class + `ExamRAG`/`CareerRAG`/`InterviewRAG` implemented
-- [ ] The grounded prompt template's "I don't have information on that" fallback
-      verified working on deliberately out-of-scope test questions (§12.2)
-- [ ] `/interview/start` and `/interview/{id}/ask` wired, persisting to
-      `INTERVIEW_SESSIONS`/`INTERVIEW_QA`, and reusing Phase 6's `heavy_lock` +
-      `asyncio.to_thread` pattern
-- [ ] `/exam/topic-explainer` wired the same way
-- [ ] Latency measured and at least one round of §13's tuning applied if the raw
-      numbers felt too slow for a live demo
-- [ ] "Start Mock Interview" on the real `/career` page (from Phase 2's wiring)
-      returns a real, context-grounded question, and follow-up answers work
+**Switched from local Ollama to Groq (cloud) partway through planning this
+phase** — the user's call, made explicitly: "working matters more than 'is
+it offline'". Ollama was never installed; `phi4-mini` was never pulled.
+Everything below reflects the Groq-based implementation. See the header note
+added to this doc's top (and `backend/rag_core/pipeline.py`'s docstring) for
+the full rationale, including why generation is no longer routed through
+Phase 6's `heavy_lock`/`asyncio.to_thread` (that pattern exists to stop two
+CPU-bound jobs fighting over this laptop's cores — Groq's generation runs on
+Groq's servers, not here, so there's no local CPU contention to serialize
+against; retrieval, which IS local CPU work, still goes through
+`asyncio.to_thread` via `RAGPipeline.aretrieve()`).
+
+- [x] ~~`ollama run phi4-mini`~~ — N/A, using Groq's `openai/gpt-oss-120b`
+      instead. Verified live against the real API: picking a model required
+      querying `client.models.list()` directly — the doc's assumed
+      `llama-3.3-70b-versatile` model name returned a 404, model rosters
+      change. Also empirically compared `gpt-oss-20b` vs `gpt-oss-120b`:
+      120b was both faster (0.77s vs 1.03s) and gave a more complete answer
+      in the same token budget, so it's the default despite being the
+      larger model — Groq's hosted inference makes the usual
+      size-vs-speed tradeoff not hold here.
+- [x] All three `content/` folders populated with real curated documents (§3):
+      8 exam topic explainers (prioritized topics the frontend's existing
+      mocks already reference — Algebra/quadratics, Geometry, Grammar,
+      Logical Reasoning, Advanced Math, Physics, Biology, Chemistry), 6
+      career docs (5 careers matching `career_profiles`' seeded rows + 1
+      general roadmap guide), 6 interview docs (5 career question banks +
+      1 STAR-method technique guide). Written directly, not scraped.
+- [x] `ingest.py` run successfully for all three KBs (52/37/32 chunks from
+      8/6/6 documents). §6.1's retrieval check confirmed sensible top-k
+      results for test queries per KB — also captured as a permanent test
+      suite, `backend/tests/test_rag_retrieval.py` (4/4 passing), rather
+      than a one-off manual check.
+- [x] `RAGPipeline` base class + `ExamRAG`/`CareerRAG`/`InterviewRAG`
+      implemented in `backend/rag_core/` (not under `rag_pipelines/*/`, as
+      the doc's §8 shows — importing across the `backend/`↔`rag_pipelines/`
+      top-level boundary on every request would need the same sys.path
+      hacks as the standalone `ingest.py` scripts; the content/ingestion
+      side stays in `rag_pipelines/` as documented, the importable pipeline
+      code lives in the package that actually imports it at request time).
+- [x] The grounded prompt's "I don't have information on that" fallback
+      verified on a deliberately out-of-scope question ("what's the best
+      pizza topping") via `ExamRAG` — correctly declined rather than
+      inventing an answer. Verified alongside a correct in-scope answer in
+      the same end-to-end run, so this isn't cherry-picked.
+- [x] `/interview/start` and `/interview/{id}/ask` wired, persisting to
+      `interview_sessions`/`interview_qa`. Caught and fixed a real bug
+      before it shipped: initially hardcoded the career title to the
+      literal string `"this role"` for every follow-up turn, since
+      `InterviewSession.career_id` wasn't actually being populated — this
+      would have silently degraded every interview after the first
+      question (the model loses which role it's interviewing for).
+      Fixed by storing `career_id` on `start()` and looking up the real
+      title via `CareerProfile` on every `ask()`. Verified across two
+      consecutive turns in one session — the second turn's follow-up
+      question coherently built on the first, confirming conversation
+      history reconstruction works, not just a single isolated call.
+- [x] `/exam/topic-explainer` and `/career/ask` (the latter not shown in the
+      doc's §10, added for symmetry — `CareerRAG` would otherwise be dead
+      code) wired the same way.
+- [x] Latency measured directly from the end-to-end run: ~1-2s per Groq call
+      (retrieval + generation combined), an order of magnitude better than
+      the doc's "single-digit tokens/second... 15-30 second wait" expectation
+      for local Ollama on this hardware. No §13 tuning needed as a result —
+      that section's guidance (`num_ctx`, `num_predict`, smaller fallback
+      models) was written for local Ollama's constraints, which no longer
+      apply; `max_tokens=300` is set on the Groq client as the one
+      response-length cap carried over.
+- [ ] "Start Mock Interview" on the real `/career` page — not verified,
+      since the frontend isn't wired to the backend at all yet (confirmed
+      in Phase 6: no `fetch`/`axios` calls to `/api/exam|career|dashboard`
+      anywhere in `frontend/`). This is frontend-integration work for a
+      later phase, not something Phase 7 itself can complete.
 
 With this checked off, every one of the master plan's six Fixed Objectives is now
 backed by working code — Phase 8 (integration testing across the whole system) and

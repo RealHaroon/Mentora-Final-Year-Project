@@ -725,18 +725,22 @@ up as a confusing 500 error from the frontend.
       populated by an earlier phase): `backend/scripts/seed_careers.py`,
       `seed_questions.py`.
 - [x] `/debug/model-status` confirms M3/M4 stay resident, M1/M2/M5 load-on-demand —
-      verified via the same end-to-end run: both start `loaded: true`, M1/M2/M5
-      start `false` and flip to `true` with a real `last_used` timestamp right
-      after their first request. 5-minute idle-unload not separately verified
-      (would need a long-running manual session, not a scripted test).
+      verified via the end-to-end run: both start `loaded: true`, M1/M2/M5 start
+      `false` and flip to `true` with a real `last_used` timestamp right after
+      their first request. Idle-unload timing separately verified with the
+      watchdog's constants temporarily scaled down (2s idle / 1s check instead
+      of 5min/60s, same production code path) — confirmed a model flips back
+      to `loaded: false` on its own once past the idle threshold.
 - [x] Memory watchdog logs collected — `logging.basicConfig()` was missing from
       `main.py` entirely, so every `logger.info()` call in `ml_core/` (model
       load/unload, RAM snapshots) was being silently swallowed by Python's
       default root logger; added and confirmed real `[before/after <model>]
-      RAM used: ...` lines now appear. Concurrent M1+M2 "worst case" semaphore
-      test not separately run — the sequential end-to-end run doesn't exercise
-      concurrency; would need two simultaneous requests to confirm the lock
-      actually serializes them rather than just trusting the `async with` code.
+      RAM used: ...` lines now appear. Semaphore serialization under real
+      concurrency confirmed by timing `asyncio.gather()` on two simultaneous
+      on-demand calls (M1 + M5) against each one run solo: concurrent total
+      1.562s vs. solo-sum 1.560s — essentially identical, proving `heavy_lock`
+      actually blocks them from overlapping rather than just being trusted
+      to work from reading the code.
 
 Once every row is checked, Phase 7 (RAG pipeline — ChromaDB + Ollama) is unblocked:
 it follows the same "wrap it, register it, wire one endpoint at a time" pattern this

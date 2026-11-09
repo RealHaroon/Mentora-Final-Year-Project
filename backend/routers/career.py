@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from database.models import CareerProfile, CareerRanking, CvUpload, User
 from database.session import get_db
 from ml_core.model_manager import ModelManager
+from rag_core.career_rag import CareerRAG
 from schemas.career import CareerGoalUpdate
 from services.auth_service import get_current_user
 
@@ -17,6 +18,8 @@ router = APIRouter(prefix="/career", tags=["career"])
 
 UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads" / "cv"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+_career_rag = CareerRAG()
 
 _ROADMAP = [
     {"month_number": "1-2", "milestone_title": "Python & Stats", "description": "Fundamentals", "status": "completed"},
@@ -96,6 +99,13 @@ async def upload_cv(
         "certifications": extracted["certifications"],
         "degrees": extracted.get("degrees", []),
     }
+
+
+@router.get("/ask")
+async def ask_career_question(query: str, user: User = Depends(get_current_user)):
+    # Phase 7 — CareerRAG (grounded in rag_pipelines/career_rag/content/).
+    answer = await _career_rag.answer(query)
+    return {"answer": answer}
 
 
 @router.post("/goal")
