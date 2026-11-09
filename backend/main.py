@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from config import settings
 from database import models  # noqa: F401 — registers models on Base before create_all
@@ -10,6 +12,7 @@ from database.session import Base, engine, run_additive_migrations
 from ml_core.model_manager import ModelManager
 from ml_core.registry import build_model_registry
 from routers import auth, career, dashboard, exam, interview, learning, notifications, users
+from services.rate_limit import limiter
 
 if settings.debug:
     from routers import debug as debug_router
@@ -36,6 +39,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Mentora API", lifespan=lifespan)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

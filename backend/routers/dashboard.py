@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import ExamSession, Notification, User
+from database.models import ExamSession, Notification, TopicScore, User
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from services.auth_service import get_current_user
@@ -80,12 +80,30 @@ async def check_at_risk(request: Request, db: Session = Depends(get_db), user: U
 
 
 @router.get("/weak-topics")
-def get_weak_topics(user: User = Depends(get_current_user)):
+def get_weak_topics(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # Phase 8 — found via integration testing: this was still Phase 2's mock,
+    # never wired to the real TopicScore rows M1 (gap_classifier) writes in
+    # /exam/mcq/submit. Low score = weak; the 38/44/60/62 mock thresholds are
+    # kept as the "note" severity bands for continuity with the old UI copy.
+    rows = (
+        db.query(TopicScore)
+        .filter(TopicScore.user_id == user.user_id)
+        .order_by(TopicScore.score.asc())
+        .all()
+    )
+
+    def note_for(score: float) -> str | None:
+        if score < 40:
+            return "Needs urgent review"
+        if score < 60:
+            return "Medium"
+        if score < 70:
+            return "Improving"
+        return None
+
     return {
         "topics": [
-            {"subject": "Algebra", "topic": "Quadratic Equations", "score": 38, "note": "Needs urgent review"},
-            {"subject": "Grammar", "topic": "Tenses", "score": 44, "note": None},
-            {"subject": "Geometry", "topic": "Circles", "score": 60, "note": "Medium"},
-            {"subject": "English", "topic": "Reading Comprehension", "score": 62, "note": "Improving"},
+            {"subject": r.subject, "topic": r.topic, "score": r.score, "note": note_for(r.score)}
+            for r in rows
         ]
     }

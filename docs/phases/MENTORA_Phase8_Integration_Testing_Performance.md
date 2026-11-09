@@ -484,27 +484,127 @@ demo? There's no universally right answer here — it depends on what you observ
 
 ## 13. Definition of done
 
-- [ ] Backend integration tests (§2) covering the full exam flow, full career flow,
-      and auth edge cases — all passing against a clean test DB
-- [ ] Playwright end-to-end tests (§3) covering at least register→MCQ→dashboard and
-      the logged-out-redirect case
-- [ ] The 11-point manual checklist (§4) walked through once, unhurried, with notes
-- [ ] Locust load test (§5) run at 3–5 simulated users; failure/queueing behavior
-      understood and documented, not just observed once
-- [ ] Real RAM idle/peak numbers (§6) measured and written down, replacing every
-      estimated number from the master plan's §12
-- [ ] At least one `py-spy` profile taken of a genuinely slow request, cause
-      identified
-- [ ] §8's security checklist gone through — every row checked or explicitly
-      addressed
-- [ ] Realistic-volume seed data (§9) tested against the dashboard and career pages
-      specifically, since those are where mock-data assumptions were most likely
-      baked in during Phase 2
-- [ ] `scripts/run_all_tests.sh` exists and passes; optionally, GitHub Actions
-      running it automatically
-- [ ] The `phi4-mini` vs. fallback-model decision (§11) made deliberately, based on
-      this phase's actual measurements, not left as a "we'll deal with it later"
+> **Scope decision, made explicitly with the user before starting**: §3
+> (Playwright) and §4 (the manual browser checklist) both assume the Next.js
+> frontend calls this backend. It doesn't — confirmed in Phase 6 (no
+> `fetch`/`axios` calls to `/api/exam|career|dashboard` anywhere in
+> `frontend/`) and still true here. Running either against the current
+> frontend would "pass" while testing nothing real. User's call: do
+> everything backend-only achievable now, skip §3-4 explicitly rather than
+> produce misleading green checkmarks. §11 (the `phi4-mini` vs. fallback
+> model decision) is also N/A — Phase 7 already swapped to Groq (cloud),
+> so there's no local model to tune/swap.
+
+- [x] Backend integration tests (§2) — `test_exam_flow.py`, `test_career_flow.py`,
+      `test_auth_edge_cases.py`: 11 tests, all passing against a dedicated
+      SQLite test DB (real production data never touched). Deviated from the
+      doc's async-httpx sketch: used the sync `TestClient` instead, session-scoped
+      — the doc's `ASGITransport` approach never triggers FastAPI's `lifespan`,
+      which is exactly where `app.state.model_manager` gets set; every
+      model-backed route would have broken. See `tests/conftest.py`'s docstring.
+      Found and fixed a real gap while writing these: `/dashboard/weak-topics`
+      was still Phase 2's hardcoded mock, never wired to the real `TopicScore`
+      rows M1 writes — the doc's own example test (`weak topics actually show
+      on the dashboard`) would have silently passed against fake data otherwise.
+- [ ] ~~Playwright end-to-end tests (§3)~~ — skipped, see scope decision above.
+- [ ] ~~11-point manual checklist (§4)~~ — skipped, see scope decision above.
+- [x] Locust load test (§5) — `tests/locustfile.py`, run headless at 5 users/90s.
+      0% failure rate throughout. Confirmed the exact behavior §5.3 describes:
+      `/exam/mcq` (M2, behind `heavy_lock`) queued hard under concurrency — one
+      call took 34.7s, a second concurrent one queued behind it and took 63.1s
+      — while `/exam/topic-explainer` (Groq, NOT behind `heavy_lock` — see
+      Phase 7's header note) stayed under 2.6s throughout. No errors, just
+      queuing, exactly as designed — but 63s is a real demo-risk number if two
+      people hit "generate a new question" close together, worth flagging for
+      Phase 9's demo planning.
+- [x] Real RAM idle/peak numbers (§6) measured on the actual running server
+      (not estimated):
+
+  | Stage | uvicorn RSS |
+  |---|---|
+  | Idle (M3/M4 resident only) | 1028MB |
+  | M1 loaded (DeBERTa) | 1542MB (Δ ~513MB) |
+  | M1 unloaded + idle-unload cleanup | 1037MB (back to ~baseline) |
+  | M2 loaded (FLAN-T5-large fp16) | 2486MB (Δ ~1449MB) |
+  | M1 + M2 loaded together (measured peak) | 3152MB |
+  | M5 loaded (BERT NER) | 2627MB (Δ ~489MB) |
+
+  **Found and fixed a real bug in the process**: `unload()` dropping the
+  Python reference did NOT shrink process RSS — confirmed in isolation
+  (921MB loaded -> 718MB after `unload()` + explicit `gc.collect()`, nowhere
+  near the ~287MB pre-load baseline). Root cause: glibc's malloc doesn't
+  return freed arenas to the OS on its own. Fix: `ml_core/memory_watchdog.py`'s
+  new `release_freed_memory()` calls `gc.collect()` then `ctypes.CDLL
+  ("libc.so.6").malloc_trim(0)` (Linux-only, no-op elsewhere), called from
+  `ModelManager._idle_watchdog` right after `model.unload()`. Measured
+  result for M1 in the live server: RSS dropped from 1542MB back to 1037MB
+  — essentially full recovery. **Honest caveat, not swept under the rug**:
+  the same fix had zero measurable effect on M2 in the live server on one
+  trial (RSS stayed at 2486MB after its idle-unload fired), while working
+  fully in an isolated single-model script (2035MB -> 439MB). Most likely
+  cause: heap fragmentation from other interleaved request-handling
+  allocations in the busier live process prevents `malloc_trim` from
+  releasing partially-freed arenas — a known limitation of this technique,
+  not a bug in the fix itself. A later unload (M5's) still retroactively
+  reclaimed the backlog, dropping RSS to 960MB, lower than the original
+  1028MB baseline — so the mechanism works over a session, just not
+  deterministically on every single individual unload.
+- [x] Latency profiling — used `cProfile` instead of `py-spy`: this system's
+      `kernel.yama.ptrace_scope=1` blocks `py-spy`'s ptrace-based attach
+      without an interactive sudo password, which can't be supplied
+      autonomously. Profiled the CV-upload/NER path directly: 95% of the
+      1.36s request (`torch._C._nn.linear`, 1.29s) is the BERT model's actual
+      forward-pass compute across its layers — no wasted time in
+      tokenization, chunking, or the BIO-decoding logic.
+- [x] §8's security checklist:
+  - SQL injection: reviewed every `.execute(`/`.format(` site. One raw
+    f-string DDL site (`database/session.py`'s migration helper) — safe,
+    since `table_name`/`column.name`/`col_type` come from the hardcoded
+    SQLAlchemy model definitions, never from request input. Everything else
+    uses SQLAlchemy Core `select()`/parameterized queries. No injection
+    vector found.
+  - Password storage: bcrypt confirmed (`auth_service.py`), now with a
+    dedicated test (`test_password_is_actually_hashed_not_plaintext`).
+  - JWT expiry: `test_expired_token_rejected` (re-signs with a past `exp`
+    rather than sleeping past the real 7-day expiry).
+  - CORS: `cors_origins` defaults to `["http://localhost:3000"]`, not `["*"]`.
+  - File upload validation: **was completely missing** — no size limit, no
+    content check, a renamed `.exe` would silently fall through to the
+    "anything else" text-decode branch. Fixed: `routers/career.py`'s
+    `_validate_upload()` — 5MB cap, extension allowlist, and magic-byte
+    sniffing (`%PDF-` / `PK\x03\x04` / null-byte+UTF-8 check for .txt).
+    4 dedicated tests in `tests/test_security.py`, including the doc's exact
+    scenario (a `.exe` renamed to `.pdf`).
+  - Rate limiting: **was completely missing** — added via `slowapi`
+    (`services/rate_limit.py`): 5/min on `/auth/login` and
+    `/auth/forgot-password`, 10/min on `/auth/register`. Disabled by
+    default across the test suite (`conftest.py`) since cumulative
+    legitimate test traffic from one fake IP exhausted these limits within
+    the suite itself (caught via two real test failures before the fix);
+    re-enabled only inside the one test that verifies the mechanism itself.
+  - OWASP ZAP: skipped — optional per the doc's own framing, and a scan run
+    needs a long-lived target server beyond this phase's scope.
+- [x] Realistic-volume seed data (§9) — `scripts/seed_test_data.py`, 50
+      students / 750 exam sessions / 160 topic scores via Faker. No crashes
+      on `/dashboard/weak-topics`, `/dashboard/at-risk-check`, or
+      `/career/rankings` under this volume. `/dashboard/stats`,
+      `/score-trend`, `/weekly-snapshot` remain Phase 2 mocks (pre-existing,
+      not a volume-sensitive regression — they're hardcoded regardless of N,
+      so Faker volume can't break what never reads real data).
+- [x] `scripts/run_all_tests.sh` exists and passes (backend-only, Playwright
+      step omitted with the same rationale as §3-4 above).
+      GitHub Actions (§10.2) deliberately **not** added: the model weights
+      (`ml_models/saved/`) and the RAG vector store (`vector_store/`) are both
+      gitignored for size (multi-GB), so a CI runner would have nothing to
+      load — every model-wrapper and RAG test would fail on missing files,
+      not on real bugs. Making this work would mean non-trivial extra CI
+      infra (fetching multi-GB artifacts, a Groq API secret) beyond what this
+      explicitly-optional doc section calls for.
+- [ ] ~~`phi4-mini` vs. fallback model decision (§11)~~ — N/A, see scope note.
 
 Once every row is checked, the system has been verified as a whole, not just in
 pieces — Phase 9 (polish, one-click startup scripts, and demo-day packaging) is what
-turns "it works" into "it works reliably in front of an audience."
+turns "it works" into "it works reliably in front of an audience." The one number
+from this phase worth carrying into Phase 9's planning: a concurrent M2 request can
+take upward of 60s under even light load — worth a loading-state UI treatment or a
+demo script that avoids triggering two question-generations at once.

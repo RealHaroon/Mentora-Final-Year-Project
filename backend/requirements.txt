@@ -27,4 +27,9 @@ python-frontmatter
 
 # Dev/test only
 pytest
+pytest-asyncio
 httpx
+faker
+locust
+py-spy
+slowapi

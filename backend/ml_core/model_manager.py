@@ -3,7 +3,7 @@ import logging
 import time
 
 from ml_core.base import LoadableModel
-from ml_core.memory_watchdog import log_memory_snapshot
+from ml_core.memory_watchdog import log_memory_snapshot, release_freed_memory
 
 logger = logging.getLogger("model_manager")
 
@@ -52,6 +52,7 @@ class ModelManager:
                     if now - self.last_used.get(name, now) > IDLE_UNLOAD_SECONDS:
                         logger.info(f"Unloading idle model: {name}")
                         await asyncio.to_thread(model.unload)
+                        await asyncio.to_thread(release_freed_memory)
             except asyncio.CancelledError:
                 raise
             except Exception:

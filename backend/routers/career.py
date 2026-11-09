@@ -30,6 +30,39 @@ _ROADMAP = [
 ]
 
 
+MAX_CV_SIZE_BYTES = 5 * 1024 * 1024  # 5MB — plenty for a text-based resume, caps both abuse and RAM risk
+_ALLOWED_SUFFIXES = {".pdf", ".docx", ".txt"}
+
+
+def _validate_upload(filename: str, raw: bytes) -> None:
+    # Phase 8 §8 security pass — found via the doc's own test scenario
+    # ("upload a .exe renamed to .pdf, confirm rejection"): this previously
+    # had no size limit and no content check, only a filename-extension
+    # switch in _extract_text — a renamed executable would silently fall
+    # through to the ".txt and anything else" branch and get "extracted" as
+    # garbage text instead of being rejected.
+    if len(raw) > MAX_CV_SIZE_BYTES:
+        raise HTTPException(status_code=413, detail=f"File too large (max {MAX_CV_SIZE_BYTES // 1024 // 1024}MB)")
+
+    suffix = Path(filename).suffix.lower()
+    if suffix not in _ALLOWED_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Only .pdf, .docx, or .txt files are accepted")
+
+    # Content sniffing — a renamed file keeps the extension but not the
+    # real file format's magic bytes.
+    if suffix == ".pdf" and not raw.startswith(b"%PDF-"):
+        raise HTTPException(status_code=415, detail="File does not look like a valid PDF")
+    if suffix == ".docx" and not raw.startswith(b"PK\x03\x04"):  # DOCX is a ZIP container
+        raise HTTPException(status_code=415, detail="File does not look like a valid DOCX")
+    if suffix == ".txt":
+        if b"\x00" in raw[:4096]:  # null bytes are a strong binary-content signal, not valid in plain text
+            raise HTTPException(status_code=415, detail="File does not look like plain text")
+        try:
+            raw.decode("utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=415, detail="File does not look like plain text")
+
+
 def _extract_text(filename: str, raw: bytes) -> str:
     suffix = Path(filename).suffix.lower()
     if suffix == ".pdf":
@@ -66,6 +99,7 @@ async def upload_cv(
 ):
     # Phase 6 — M5 (CV NER Extractor).
     raw = await cv_file.read()
+    _validate_upload(cv_file.filename, raw)
     text = _extract_text(cv_file.filename, raw)
     if not text.strip():
         raise HTTPException(status_code=422, detail="Could not extract any text from this file")
