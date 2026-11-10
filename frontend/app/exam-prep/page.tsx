@@ -40,24 +40,32 @@ export default function ExamPrepPage() {
     loadAll();
   }, []);
 
+  // Deliberately NOT a single Promise.all gating all three state updates
+  // behind whichever request finishes last — /exam/mcq can legitimately
+  // take 60-90s (M2, the local FLAN-T5 generator, under load; see Phase 8's
+  // Locust findings), which was holding the already-successful timetable
+  // and today-topic data hostage behind it. Each fetch now updates its own
+  // state independently, as soon as IT resolves.
   function loadAll() {
-    return Promise.all([
-      apiFetch<TimetableResponse>("/exam/timetable"),
-      apiFetch<TodayTopicResponse>("/exam/today-topic"),
-      apiFetch<McqResponse>("/exam/mcq"),
-    ])
-      .then(([timetableRes, topicRes, mcqRes]) => {
-        setTimetable(timetableRes);
-        setTodayTopic(topicRes);
-        setMcq(mcqRes);
-      })
-      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load this right now"));
+    const timetable = apiFetch<TimetableResponse>("/exam/timetable")
+      .then(setTimetable)
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load the timetable"));
+    const topic = apiFetch<TodayTopicResponse>("/exam/today-topic")
+      .then(setTodayTopic)
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load today's topic"));
+    const mcq = apiFetch<McqResponse>("/exam/mcq")
+      .then(setMcq)
+      .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load the MCQ"));
+    return Promise.allSettled([timetable, topic, mcq]);
   }
 
   async function handleRegenerate(e: React.MouseEvent) {
     e.preventDefault();
     setRegenerating(true);
     setLoadError(null);
+    setTimetable(null);
+    setTodayTopic(null);
+    setMcq(null);
     await loadAll();
     setRegenerating(false);
   }
@@ -323,10 +331,18 @@ export default function ExamPrepPage() {
                   </label>
                 ))}
                 {mcqResult && (
-                  <div className={mcqResult.correct ? "form-success" : "form-error"}>
-                    {mcqResult.correct
-                      ? "Correct!"
-                      : `Not quite — the correct answer is ${mcqResult.correct_answer}.`}
+                  <div className={mcqResult.correct === null ? "form-neutral" : mcqResult.correct ? "form-success" : "form-error"}>
+                    {mcqResult.correct === null
+                      ? (mcqResult.detail ?? "This question isn't gradable.")
+                      : mcqResult.correct
+                        ? "Correct!"
+                        : `Not quite — the correct answer is ${mcqResult.correct_answer}.`}
+                    {mcqResult.weak_topics_flagged && mcqResult.weak_topics_flagged.length > 0 && (
+                      <>
+                        {" "}
+                        AI flagged: {mcqResult.weak_topics_flagged.join(", ")}.
+                      </>
+                    )}
                   </div>
                 )}
                 <div className="flex-between mt-24">

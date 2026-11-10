@@ -15,6 +15,17 @@ import type {
 
 const PROGRESS_CLASS = (score: number) => (score >= 75 ? "" : score >= 50 ? " warn" : " low");
 
+// Matches backend/routers/interview.py's _CAREER_GOAL_IDS exactly — both
+// sides are fixed, small, and tied to the same CareerGoal enum, so a
+// lookup here is simpler than round-tripping through another endpoint.
+const CAREER_ID_TO_GOAL: Record<number, string> = {
+  1: "data_scientist",
+  2: "ml_engineer",
+  3: "business_analyst",
+  4: "software_engineer",
+  5: "product_manager",
+};
+
 export default function CareerPage() {
   const [extracted, setExtracted] = useState<CvUploadResponse | null>(null);
   const [editingInfo, setEditingInfo] = useState(false);
@@ -26,7 +37,7 @@ export default function CareerPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [interview, setInterview] = useState<InterviewStartResponse | null>(null);
-  const [interviewFeedback, setInterviewFeedback] = useState<InterviewAskResponse | null>(null);
+  const [interviewHistory, setInterviewHistory] = useState<{ role: "student" | "ai"; text: string }[]>([]);
   const [interviewAnswer, setInterviewAnswer] = useState("");
   const [interviewLoading, setInterviewLoading] = useState(false);
 
@@ -61,6 +72,9 @@ export default function CareerPage() {
       });
       setExtracted(result);
       setEditingInfo(false);
+      // Rankings need extracted skills, which only exist after this upload
+      // succeeds — the initial page-load fetch 422s for every new user.
+      await refreshRankings();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "CV upload failed");
     } finally {
@@ -83,7 +97,7 @@ export default function CareerPage() {
       gpa: Number(formData.get("gpa")) || extracted.gpa,
       skills: splitList(formData.get("skills")),
       certifications: splitList(formData.get("certifications")),
-      projects: splitList(formData.get("projects")),
+      degrees: splitList(formData.get("degrees")),
     });
     setEditingInfo(false);
   }
@@ -105,7 +119,8 @@ export default function CareerPage() {
   async function handleAiSuggest() {
     try {
       const suggestion = await apiFetch<AiSuggestResponse>("/career/ai-suggest");
-      setCareerGoal(suggestion.career_goal);
+      const goal = CAREER_ID_TO_GOAL[suggestion.career_id];
+      if (goal) setCareerGoal(goal);
       await refreshRankings();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't get an AI suggestion");
@@ -126,9 +141,14 @@ export default function CareerPage() {
     setInterviewLoading(true);
     setError(null);
     try {
-      const session = await apiFetch<InterviewStartResponse>("/interview/start", { method: "POST" });
+      // career_goal is a REQUIRED query param on the real endpoint — the
+      // original wiring never sent it, which would 422 every time.
+      const session = await apiFetch<InterviewStartResponse>(
+        `/interview/start?career_goal=${encodeURIComponent(careerGoal)}`,
+        { method: "POST" }
+      );
       setInterview(session);
-      setInterviewFeedback(null);
+      setInterviewHistory([]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't start the mock interview");
     } finally {
@@ -139,13 +159,18 @@ export default function CareerPage() {
   async function handleInterviewAsk(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!interview || !interviewAnswer.trim()) return;
+    const studentAnswer = interviewAnswer;
     setInterviewLoading(true);
     try {
       const result = await apiFetch<InterviewAskResponse>(`/interview/${interview.interview_id}/ask`, {
         method: "POST",
-        body: JSON.stringify({ answer: interviewAnswer }),
+        body: JSON.stringify({ answer: studentAnswer }),
       });
-      setInterviewFeedback(result);
+      // The model's reply deliberately combines feedback on the last answer
+      // AND the next question into one block of text (Phase 7's design —
+      // the RAG prompt doesn't ask for structured output), so it's rendered
+      // as one continuing conversation, not split into separate fields.
+      setInterviewHistory((prev) => [...prev, { role: "student", text: studentAnswer }, { role: "ai", text: result.answer }]);
       setInterviewAnswer("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't submit that answer");
@@ -214,7 +239,7 @@ export default function CareerPage() {
                 <form onSubmit={handleEditInfoSubmit}>
                   <div className="field">
                     <label htmlFor="gpa">GPA</label>
-                    <input id="gpa" name="gpa" type="number" step="0.1" min="0" max="4" defaultValue={extracted.gpa} />
+                    <input id="gpa" name="gpa" type="number" step="0.1" min="0" max="4" defaultValue={extracted.gpa ?? ""} placeholder="Not detected" />
                   </div>
                   <div className="field">
                     <label htmlFor="skills">Technical Skills (comma-separated)</label>
@@ -225,8 +250,8 @@ export default function CareerPage() {
                     <input id="certifications" name="certifications" defaultValue={extracted.certifications.join(", ")} />
                   </div>
                   <div className="field">
-                    <label htmlFor="projects">Projects (comma-separated)</label>
-                    <input id="projects" name="projects" defaultValue={extracted.projects.join(", ")} />
+                    <label htmlFor="degrees">Degrees (comma-separated)</label>
+                    <input id="degrees" name="degrees" defaultValue={extracted.degrees.join(", ")} />
                   </div>
                   <div className="flex-between" style={{ gap: 8 }}>
                     <button type="submit" className="btn btn-primary btn-sm" style={{ flex: 1 }}>
@@ -246,37 +271,49 @@ export default function CareerPage() {
                 <>
                   <div className="flex-between" style={{ marginBottom: 12 }}>
                     <span className="small-muted">GPA</span>
-                    <strong>{extracted.gpa} / 4.0</strong>
+                    <strong>{extracted.gpa !== null ? `${extracted.gpa} / 4.0` : "Not detected"}</strong>
                   </div>
                   <div className="small-muted" style={{ marginBottom: 6 }}>
                     Technical Skills
                   </div>
                   <div style={{ marginBottom: 12 }}>
-                    {extracted.skills.map((skill) => (
-                      <span className="chip" key={skill}>
-                        {skill}
-                      </span>
-                    ))}
+                    {extracted.skills.length > 0 ? (
+                      extracted.skills.map((skill) => (
+                        <span className="chip" key={skill}>
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="small-muted">None detected</span>
+                    )}
                   </div>
                   <div className="small-muted" style={{ marginBottom: 6 }}>
                     Certifications
                   </div>
                   <div style={{ marginBottom: 12 }}>
-                    {extracted.certifications.map((cert) => (
-                      <span className="chip" key={cert}>
-                        {cert}
-                      </span>
-                    ))}
+                    {extracted.certifications.length > 0 ? (
+                      extracted.certifications.map((cert) => (
+                        <span className="chip" key={cert}>
+                          {cert}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="small-muted">None detected</span>
+                    )}
                   </div>
                   <div className="small-muted" style={{ marginBottom: 6 }}>
-                    Projects
+                    Degrees
                   </div>
                   <div style={{ marginBottom: 14 }}>
-                    {extracted.projects.map((project) => (
-                      <span className="chip" key={project}>
-                        {project}
-                      </span>
-                    ))}
+                    {extracted.degrees.length > 0 ? (
+                      extracted.degrees.map((degree) => (
+                        <span className="chip" key={degree}>
+                          {degree}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="small-muted">None detected</span>
+                    )}
                   </div>
                   <button className="btn btn-outline btn-block btn-sm" onClick={() => setEditingInfo(true)}>
                     Edit extracted info
@@ -351,7 +388,7 @@ export default function CareerPage() {
               ) : (
                 <tr>
                   <td colSpan={4} className="small-muted">
-                    Loading rankings…
+                    {error ? "Upload a CV above to see your rankings." : "Loading rankings…"}
                   </td>
                 </tr>
               )}
@@ -402,12 +439,17 @@ export default function CareerPage() {
 
             {interview && (
               <div style={{ marginTop: 18 }}>
-                <p style={{ fontWeight: 600, marginBottom: 6 }}>Q: {interviewFeedback?.next_question ?? interview.question}</p>
-                {interviewFeedback && (
-                  <p className="small-muted" style={{ marginBottom: 14 }}>
-                    {interviewFeedback.ai_feedback}
+                <p style={{ fontWeight: 600, marginBottom: 6 }}>Q: {interview.question}</p>
+                {interviewHistory.map((turn, i) => (
+                  <p
+                    key={i}
+                    className={turn.role === "student" ? "small-muted" : undefined}
+                    style={{ marginBottom: 10, whiteSpace: "pre-wrap" }}
+                  >
+                    {turn.role === "student" ? "You: " : ""}
+                    {turn.text}
                   </p>
-                )}
+                ))}
                 <form onSubmit={handleInterviewAsk} className="flex-between" style={{ gap: 10 }}>
                   <input
                     type="text"

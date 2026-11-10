@@ -190,19 +190,23 @@ export default async function DashboardPage() {
               <h4 style={{ margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6 }}>
                 ⚠ Weak Topics (AI flagged)
               </h4>
-              {weakTopics.map((topic) => (
-                <div className="weak-item" key={topic.topic}>
-                  <h4>
-                    {topic.subject} — {topic.topic}
-                  </h4>
-                  <div className="score-line">
-                    Score: {topic.score}%{topic.note ? ` · ${topic.note}` : ""}
+              {weakTopics.length > 0 ? (
+                weakTopics.map((topic) => (
+                  <div className="weak-item" key={topic.topic}>
+                    <h4>
+                      {topic.subject} — {topic.topic}
+                    </h4>
+                    <div className="score-line">
+                      Score: {topic.score}%{topic.note ? ` · ${topic.note}` : ""}
+                    </div>
+                    <span className="progress-track">
+                      <span className={`progress-fill${PROGRESS_CLASS(topic.score)}`} style={{ width: `${topic.score}%` }} />
+                    </span>
                   </div>
-                  <span className="progress-track">
-                    <span className={`progress-fill${PROGRESS_CLASS(topic.score)}`} style={{ width: `${topic.score}%` }} />
-                  </span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="small-muted">No weak topics flagged yet — take a few MCQ tests to get started.</p>
+              )}
 
               <h4 id="notifications" style={{ margin: "24px 0 12px", display: "flex", alignItems: "center", gap: 6, scrollMarginTop: 90 }}>
                 🔔 Notifications

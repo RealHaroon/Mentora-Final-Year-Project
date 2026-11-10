@@ -47,6 +47,13 @@ export interface NotificationItem {
   is_read: boolean;
 }
 
+// M3 (trajectory predictor) — not wired into any page yet (added in Phase 6,
+// after this frontend's initial wiring pass). `available: false` when the
+// student has fewer than 5 scored sessions.
+export type AtRiskCheckResponse =
+  | { available: false; detail: string }
+  | { available: true; predicted_next_score: number; trend: "declining" | "improving" | "stable" };
+
 // ---- exam ----
 
 export interface TimetableRow {
@@ -68,6 +75,14 @@ export interface TodayTopicResponse {
   videos: { title: string; source: string; duration_min: number }[];
 }
 
+// Shared shape for /exam/topic-explainer and /career/ask (RAG + Groq, Phase
+// 7) — not wired into any page yet, added after this frontend's initial
+// wiring pass. A 503 means Groq is temporarily unavailable, not a crash —
+// see RAGUnavailableError in backend/rag_core/pipeline.py.
+export interface RagAnswerResponse {
+  answer: string;
+}
+
 export interface McqQuestion {
   question_id: string;
   text: string;
@@ -83,22 +98,29 @@ export interface McqResponse {
 
 export interface McqSubmitResponse {
   question_id: string;
-  correct: boolean;
-  correct_answer: string;
+  // null for a question with no labeled correct_answer in the question bank
+  // (common — only ~17% of the seeded historic past-paper questions have
+  // one) or for a live M2-generated question ("generated" id, never graded).
+  correct: boolean | null;
+  correct_answer: string | null;
+  weak_topics_flagged?: string[];
+  detail?: string;
 }
 
 // ---- career ----
 
 export interface CvUploadResponse {
   filename: string;
-  gpa: number;
+  gpa: number | null; // M5 often can't extract a GPA from real CVs — null, not a crash
   skills: string[];
   certifications: string[];
-  projects: string[];
+  // M5's real tag set has no PROJECT label (CERT/DEGREE/GPA/SKILL only) —
+  // this is actually extracted degrees (e.g. "BSc"), not projects.
+  degrees: string[];
 }
 
 export interface AiSuggestResponse {
-  career_goal: string;
+  career_id: number;
   title: string;
   match_score: number;
 }
@@ -130,13 +152,16 @@ export interface RoadmapResponse {
 
 export interface InterviewStartResponse {
   interview_id: number;
+  career_title: string;
   question: string;
 }
 
 export interface InterviewAskResponse {
   interview_id: number;
-  ai_feedback: string;
-  next_question: string;
+  // One combined block of text (feedback on the last answer + the next
+  // question), not split fields — a deliberate Phase 7 design choice: the
+  // RAG prompt asks for both together, not structured output.
+  answer: string;
 }
 
 // ---- learning portal ----
