@@ -122,6 +122,16 @@ memory pressure from other heavy processes (other browser tabs, etc.) at the
 same time — a real, documented constraint of this project's tight 8GB RAM
 budget, not a bug in the test.
 
+One test (the full forgot-password reset flow) also needs
+`BACKEND_LOG_PATH` set to the running backend's log file, since the reset
+code isn't emailed (no email service wired up) — it's printed to the
+backend's stdout, which this test reads directly rather than a human
+reading the terminal:
+```bash
+BACKEND_LOG_PATH=/path/to/backend.log npm run test:e2e
+```
+Without it, that one test skips cleanly; the other 18 don't need it.
+
 ## Project layout
 
 ```
