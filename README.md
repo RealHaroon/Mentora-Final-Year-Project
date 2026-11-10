@@ -102,9 +102,25 @@ Frontend only (if the backend is already running separately):
 ```
 
 27 backend tests (model wrappers, RAG retrieval, full exam/career/auth flows,
-security checks). No Playwright/frontend e2e tests yet — Phases 8-9 skipped
-them believing the frontend wasn't wired (it was; see "Current state"
-above), so this is genuinely still open, not blocked on anything.
+security checks).
+
+Frontend e2e (Playwright), added 2026-11-10 — closes the gap Phases 8-9 left
+open on the mistaken belief the frontend wasn't wired (see "Current state"
+above):
+```bash
+cd frontend
+node_modules/.bin/playwright install chromium   # first time only
+npm run test:e2e
+```
+Requires the real backend AND frontend both already running (`./scripts/start_all.sh`,
+or `start_backend.sh` + `start_frontend.sh` separately) — these tests exercise
+the real ML models and RAG pipeline, not mocks, and use the seeded demo
+account (`scripts/seed_demo_account.py`). The MCQ test can take up to ~90s on
+its own (M2's real, disclosed cold-generation latency — see Phase 8's Locust
+findings); it can take much longer than that if this machine is also under
+memory pressure from other heavy processes (other browser tabs, etc.) at the
+same time — a real, documented constraint of this project's tight 8GB RAM
+budget, not a bug in the test.
 
 ## Project layout
 

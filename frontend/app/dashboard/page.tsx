@@ -5,6 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import DashboardSettings from "@/components/DashboardSettings";
 import { apiFetchServer } from "@/lib/api";
 import type {
+  AtRiskCheckResponse,
   DashboardStats,
   NotificationItem,
   ScoreTrendPoint,
@@ -35,14 +36,21 @@ const PROGRESS_CLASS = (score: number) => (score >= 70 ? "" : score >= 50 ? " wa
 
 async function loadDashboardData() {
   const token = cookies().get("mentora_session")?.value;
+  // at-risk-check (M3) is kept out of the main Promise.all: it's a slower
+  // model inference call with its own "not enough data yet" outcome, not a
+  // page-breaking dependency the way the other 6 calls are.
+  const atRiskCheck = apiFetchServer<AtRiskCheckResponse>("/dashboard/at-risk-check", token).catch(
+    () => ({ available: false, detail: "Risk check unavailable right now" }) as const
+  );
   try {
-    const [user, stats, trend, snapshot, weakTopics, notifications] = await Promise.all([
+    const [user, stats, trend, snapshot, weakTopics, notifications, atRisk] = await Promise.all([
       apiFetchServer<UserOut>("/users/me", token),
       apiFetchServer<DashboardStats>("/dashboard/stats", token),
       apiFetchServer<{ points: ScoreTrendPoint[] }>("/dashboard/score-trend", token),
       apiFetchServer<{ days: WeeklySnapshotDay[] }>("/dashboard/weekly-snapshot", token),
       apiFetchServer<{ topics: WeakTopic[] }>("/dashboard/weak-topics", token),
       apiFetchServer<{ items: NotificationItem[] }>("/notifications", token),
+      atRiskCheck,
     ]);
     return {
       user,
@@ -51,6 +59,7 @@ async function loadDashboardData() {
       snapshot: snapshot.days,
       weakTopics: weakTopics.topics,
       notifications: notifications.items,
+      atRisk,
       error: null as string | null,
     };
   } catch {
@@ -61,6 +70,7 @@ async function loadDashboardData() {
       snapshot: [],
       weakTopics: [],
       notifications: [],
+      atRisk: { available: false, detail: "Risk check unavailable right now" } as const,
       error: "Couldn't load your dashboard right now",
     };
   }
@@ -86,7 +96,7 @@ function scoreTrendPoints(points: ScoreTrendPoint[]) {
 }
 
 export default async function DashboardPage() {
-  const { user, stats, trend, snapshot, weakTopics, notifications, error } = await loadDashboardData();
+  const { user, stats, trend, snapshot, weakTopics, notifications, atRisk, error } = await loadDashboardData();
   const { line, fill } = scoreTrendPoints(trend);
   const initials = user ? `${user.first_name[0] ?? ""}${user.last_name[0] ?? ""}`.toUpperCase() : "";
 
@@ -159,6 +169,21 @@ export default async function DashboardPage() {
                   {trend.map((p) => (
                     <span key={p.session}>{p.session}</span>
                   ))}
+                </div>
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-soft)" }}>
+                  <div className="small-muted" style={{ marginBottom: 4 }}>
+                    🔮 AI Risk Check (Trajectory Predictor)
+                  </div>
+                  {atRisk.available ? (
+                    <p style={{ margin: 0, fontSize: "0.9rem" }}>
+                      Predicted next score: <strong>{atRisk.predicted_next_score}%</strong> · Trend:{" "}
+                      <strong style={atRisk.trend === "declining" ? { color: "var(--red-600)" } : undefined}>{atRisk.trend}</strong>
+                    </p>
+                  ) : (
+                    <p className="small-muted" style={{ margin: 0 }}>
+                      {atRisk.detail}
+                    </p>
+                  )}
                 </div>
               </div>
 

@@ -9,6 +9,7 @@ import type {
   CvUploadResponse,
   InterviewAskResponse,
   InterviewStartResponse,
+  RagAnswerResponse,
   RankingsResponse,
   RoadmapResponse,
 } from "@/lib/types";
@@ -40,6 +41,11 @@ export default function CareerPage() {
   const [interviewHistory, setInterviewHistory] = useState<{ role: "student" | "ai"; text: string }[]>([]);
   const [interviewAnswer, setInterviewAnswer] = useState("");
   const [interviewLoading, setInterviewLoading] = useState(false);
+
+  const [careerQuestion, setCareerQuestion] = useState("");
+  const [careerAnswer, setCareerAnswer] = useState<string | null>(null);
+  const [careerAsking, setCareerAsking] = useState(false);
+  const [careerAskError, setCareerAskError] = useState<string | null>(null);
 
   async function refreshRankings() {
     try {
@@ -134,6 +140,22 @@ export default function CareerPage() {
       document.getElementById("roadmap-section")?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't load that roadmap");
+    }
+  }
+
+  async function handleAskCareerQuestion(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!careerQuestion.trim()) return;
+    setCareerAsking(true);
+    setCareerAskError(null);
+    setCareerAnswer(null);
+    try {
+      const result = await apiFetch<RagAnswerResponse>(`/career/ask?query=${encodeURIComponent(careerQuestion)}`);
+      setCareerAnswer(result.answer);
+    } catch (err) {
+      setCareerAskError(err instanceof ApiError ? err.message : "Couldn't get an answer right now");
+    } finally {
+      setCareerAsking(false);
     }
   }
 
@@ -413,6 +435,42 @@ export default function CareerPage() {
                 </p>
               </div>
             ))}
+          </div>
+
+          <div id="career-qa" className="panel-tint" style={{ marginBottom: 24, scrollMarginTop: 90 }}>
+            <h4 style={{ margin: "0 0 4px" }}>Ask a Career Question</h4>
+            <p className="small-muted" style={{ margin: "0 0 14px" }}>
+              e.g. "What skills matter most for an ML Engineer role?" · Powered by RAG + Career Knowledge Base
+            </p>
+            <form onSubmit={handleAskCareerQuestion} className="flex-between" style={{ gap: 10 }}>
+              <input
+                type="text"
+                value={careerQuestion}
+                onChange={(e) => setCareerQuestion(e.target.value)}
+                placeholder="Type your question…"
+                style={{
+                  flex: 1,
+                  padding: "12px 14px",
+                  border: "1px solid var(--border-soft)",
+                  borderRadius: 8,
+                  background: "var(--white)",
+                  fontSize: "0.92rem",
+                }}
+              />
+              <button type="submit" className="btn btn-primary" disabled={careerAsking}>
+                {careerAsking ? "Asking…" : "Ask"}
+              </button>
+            </form>
+            {careerAskError && (
+              <div className="form-error" style={{ marginTop: 14, marginBottom: 0 }}>
+                {careerAskError}
+              </div>
+            )}
+            {careerAnswer && (
+              <p className="small-muted" style={{ marginTop: 14, marginBottom: 0, whiteSpace: "pre-wrap" }}>
+                {careerAnswer}
+              </p>
+            )}
           </div>
 
           <div id="mock-interview" className="panel-tint">

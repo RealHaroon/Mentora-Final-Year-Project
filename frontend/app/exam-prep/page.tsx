@@ -5,7 +5,7 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { McqResponse, McqSubmitResponse, TimetableResponse, TodayTopicResponse } from "@/lib/types";
+import type { McqResponse, McqSubmitResponse, RagAnswerResponse, TimetableResponse, TodayTopicResponse } from "@/lib/types";
 
 type Subject = { id: string; label: string };
 
@@ -35,6 +35,11 @@ export default function ExamPrepPage() {
   const [submitting, setSubmitting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [addedVideos, setAddedVideos] = useState<string[]>([]);
+
+  const [topicQuestion, setTopicQuestion] = useState("");
+  const [topicAnswer, setTopicAnswer] = useState<string | null>(null);
+  const [topicAsking, setTopicAsking] = useState(false);
+  const [topicAskError, setTopicAskError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -100,6 +105,22 @@ export default function ExamPrepPage() {
       });
     } catch {
       // Preferences are non-critical — fail silently rather than block the UI.
+    }
+  }
+
+  async function handleAskTopicQuestion(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!topicQuestion.trim()) return;
+    setTopicAsking(true);
+    setTopicAskError(null);
+    setTopicAnswer(null);
+    try {
+      const result = await apiFetch<RagAnswerResponse>(`/exam/topic-explainer?query=${encodeURIComponent(topicQuestion)}`);
+      setTopicAnswer(result.answer);
+    } catch (err) {
+      setTopicAskError(err instanceof ApiError ? err.message : "Couldn't get an answer right now");
+    } finally {
+      setTopicAsking(false);
     }
   }
 
@@ -288,9 +309,42 @@ export default function ExamPrepPage() {
               ) : (
                 <p className="small-muted">Loading…</p>
               )}
-              <a href="#mcq-form" className="btn btn-primary btn-block">
+              <a href="#mcq-form" className="btn btn-primary btn-block" style={{ marginBottom: 14 }}>
                 Take MCQ Test →
               </a>
+
+              <div className="small-muted" style={{ margin: "14px 0 8px" }}>
+                Ask AI about this topic
+              </div>
+              <form onSubmit={handleAskTopicQuestion} className="flex-between" style={{ gap: 8 }}>
+                <input
+                  type="text"
+                  value={topicQuestion}
+                  onChange={(e) => setTopicQuestion(e.target.value)}
+                  placeholder="e.g. How do I factor a quadratic?"
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: 8,
+                    background: "var(--white)",
+                    fontSize: "0.85rem",
+                  }}
+                />
+                <button type="submit" className="btn btn-primary btn-sm" disabled={topicAsking}>
+                  {topicAsking ? "Asking…" : "Ask"}
+                </button>
+              </form>
+              {topicAskError && (
+                <div className="form-error" style={{ marginTop: 12, marginBottom: 0 }}>
+                  {topicAskError}
+                </div>
+              )}
+              {topicAnswer && (
+                <p className="small-muted" style={{ marginTop: 12, marginBottom: 0, whiteSpace: "pre-wrap" }}>
+                  {topicAnswer}
+                </p>
+              )}
             </div>
             {(todayTopic?.videos ?? []).map((video) => (
               <div className="panel" key={video.title}>
