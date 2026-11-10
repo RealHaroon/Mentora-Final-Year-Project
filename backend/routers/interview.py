@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database.models import CareerProfile, InterviewQa, InterviewSession, User
 from database.session import get_db
 from rag_core.interview_rag import InterviewRAG
+from rag_core.pipeline import RAGUnavailableError
 from schemas.career import CareerGoal, InterviewAnswer
 from services.auth_service import get_current_user
 
@@ -38,7 +39,11 @@ async def start_interview(career_goal: CareerGoal, db: Session = Depends(get_db)
     career = db.get(CareerProfile, career_id)
     career_title = career.title if career else career_goal.value
 
-    first_question = await _interview_rag.start(career_title)
+    try:
+        first_question = await _interview_rag.start(career_title)
+    except RAGUnavailableError:
+        # Raised before any DB write below — no partial session created.
+        raise HTTPException(status_code=503, detail="Mock interview is temporarily unavailable — please try again shortly.")
 
     session = InterviewSession(user_id=user.user_id, career_id=career_id)
     db.add(session)
@@ -70,7 +75,12 @@ async def ask_interview(
     # AND the next question into one piece of text (Phase 7 doc §8.4's own
     # design — it doesn't ask for structured output), so it's stored as
     # both this turn's feedback and next turn's question.
-    reply = await _interview_rag.answer(career_title, history, payload.answer)
+    try:
+        reply = await _interview_rag.answer(career_title, history, payload.answer)
+    except RAGUnavailableError:
+        # Raised before any DB write below — the student's answer to this
+        # turn isn't lost, they can just retry the same /ask call.
+        raise HTTPException(status_code=503, detail="Mock interview is temporarily unavailable — please try again shortly.")
 
     current.student_answer = payload.answer
     current.ai_feedback = reply

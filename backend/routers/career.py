@@ -11,6 +11,7 @@ from database.models import CareerProfile, CareerRanking, CvUpload, User
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from rag_core.career_rag import CareerRAG
+from rag_core.pipeline import RAGUnavailableError
 from schemas.career import CareerGoalUpdate
 from services.auth_service import get_current_user
 
@@ -138,7 +139,10 @@ async def upload_cv(
 @router.get("/ask")
 async def ask_career_question(query: str, user: User = Depends(get_current_user)):
     # Phase 7 — CareerRAG (grounded in rag_pipelines/career_rag/content/).
-    answer = await _career_rag.answer(query)
+    try:
+        answer = await _career_rag.answer(query)
+    except RAGUnavailableError:
+        raise HTTPException(status_code=503, detail="Career Q&A is temporarily unavailable — please try again shortly.")
     return {"answer": answer}
 
 

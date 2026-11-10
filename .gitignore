@@ -15,3 +15,7 @@ ml_models/
 # Phase 7 — ChromaDB's persistent on-disk store (embeddings + SQLite index).
 # Rebuildable from rag_pipelines/*/content/ via each KB's ingest.py.
 vector_store/
+
+# Phase 9 — local DB snapshots (scripts/backup_demo_snapshot.sh). Real data,
+# not source; regenerate from scripts/seed_demo_account.py instead.
+backups/

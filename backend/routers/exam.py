@@ -1,12 +1,13 @@
 import random
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from database.models import Question, TopicScore, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from rag_core.exam_rag import ExamRAG
+from rag_core.pipeline import RAGUnavailableError
 from schemas.exam import McqSubmit, SubjectsUpdate
 from services.auth_service import get_current_user
 
@@ -53,7 +54,13 @@ async def topic_explainer(query: str, user: User = Depends(get_current_user)):
     # Phase 7 — ExamRAG (grounded in rag_pipelines/exam_rag/content/, Groq
     # for generation). Separate from /today-topic above, which is a fixed
     # structured panel (summary + points + videos), not a free-text Q&A.
-    answer = await _exam_rag.answer(query)
+    try:
+        answer = await _exam_rag.answer(query)
+    except RAGUnavailableError:
+        # Phase 9 §5 — degrade this one feature, don't 500 the whole app.
+        # Real risk now that generation is Groq (cloud), not local Ollama:
+        # this endpoint needs internet, unlike everything else in the app.
+        raise HTTPException(status_code=503, detail="Topic explainer is temporarily unavailable — please try again shortly.")
     return {"answer": answer}
 
 

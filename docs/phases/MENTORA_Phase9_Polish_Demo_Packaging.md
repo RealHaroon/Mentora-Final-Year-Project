@@ -351,23 +351,97 @@ much better than discovering it live.
 
 ## 10. Definition of done
 
-- [ ] One-click start scripts (Windows and/or macOS/Linux, matching your actual
-      presentation machine) tested from a genuine cold start
-- [ ] `preflight_check.py` passes cleanly before any rehearsal or the real demo
-- [ ] A deliberately-curated demo account exists, seeded, verified, and snapshotted
-- [ ] Every on-demand model and Ollama pre-warmed via `prewarm_demo.sh` as a standard
-      pre-demo step
-- [ ] (Optional but recommended) demo-response cache built and tested for the exact
-      rehearsed script, with `DEMO_MODE` clearly documented as opt-in and disclosed
-- [ ] UI polish pass complete — no debug endpoints exposed, no leftover placeholder
-      text, loading/error states verified by deliberately triggering them
-- [ ] Backup snapshot + git tag + screen recording of one full successful run exist
-- [ ] At least 3 full rehearsals completed, including one deliberately-broken run to
-      practice recovery
-- [ ] `requirements.txt`/`package-lock.json` frozen, `README.md` consolidated,
-      `.gitignore` verified
+> **Scope decision, made explicitly with the user before starting** (same
+> pattern as Phase 8): the frontend still isn't wired to this backend, and
+> rehearsal/presentation-hardware items are inherently the user's own
+> actions, not something that can be done on their behalf. Did everything
+> backend-only achievable now; flagged the rest below rather than skip it
+> silently.
 
-With this checked off, the system isn't just functionally complete — it's ready to be
-shown to people under real conditions. Phase 10 (final documentation) is what's left,
-and can largely be written in parallel with this phase's rehearsals rather than
-strictly after them.
+- [x] One-click start scripts — Linux/bash only (this machine), not Windows
+      `.bat`: `scripts/start_backend.sh`, `scripts/start_frontend.sh`,
+      `scripts/start_all.sh`. No Ollama step, unlike the doc's sketch —
+      Phase 7 already swapped to Groq (cloud), nothing local to launch.
+      `start_all.sh` currently starts backend-only by design (frontend line
+      commented out, with a note to uncomment once it's actually wired) —
+      starting an unwired frontend as part of "the demo" would be
+      misleading. **Tested from a genuine cold start**, not just read
+      through: preflight passed, backend came up, Swagger docs opened
+      automatically.
+- [x] `preflight_check.py` — adapted: checks `GROQ_API_KEY` is set AND
+      works with a real live call (not just "is it present" — an expired/
+      revoked key would otherwise only fail mid-demo). Verified: catches a
+      genuinely broken key, passes cleanly with a working one.
+- [x] A deliberately-curated demo account — `scripts/seed_demo_account.py`.
+      **Found something worth knowing while building this**: a hand-picked
+      monotonic score history for the trajectory-predictor demo ("clean
+      upward trend") produced the OPPOSITE label ("declining") from the
+      real model. Tested 10 monotonic sequences systematically rather than
+      assume it was a fluke: 9/10 predicted the reverse of their visible
+      trend. Consistent with M3's documented noise-floor training data
+      (scripts/phase5/README.md) — a model trained on data with no real
+      persistent trend learns mean-reversion as its best strategy, which
+      looks backwards on any artificial monotonic demo sequence. Used a
+      small-variation, no-clear-trend sequence instead (verified against
+      the real model to predict "stable", not assumed) so the dashboard's
+      visual trend doesn't contradict the AI's own verdict. CV skill
+      extraction run through the REAL M5 model, not hand-written — genuine
+      output, including its known weaknesses (certifications/GPA extract
+      poorly), kept honest rather than polished to look better than the
+      system really performs. Full story verified end to end via the live
+      API: weak-topics correctly flags Algebra, career/rankings correctly
+      puts Data Scientist first.
+- [x] Pre-warm script — `scripts/prewarm_demo.sh`, adapted: also pre-warms
+      the Groq-backed RAG endpoints (a cold first HTTP connection is as
+      visible as a slow model load), no Ollama step. Tested end to end
+      against a live server — all 5 models + both RAG paths warmed
+      successfully.
+- [ ] ~~Demo-response cache (§3.2)~~ — not built. Reassessed given this
+      project's actual failure profile rather than building it on the
+      doc's original assumption (local Ollama can be slow *even when
+      working*): Groq succeeds in ~1-2s normally, and the failure case is
+      now handled directly (see below) with a clear 503, not a crash — so
+      the cache's main value (removing timing risk from something
+      inherently slow or flaky) is mostly already covered. M2's real
+      slowness (local FLAN-T5, up to ~60s+ under concurrency per Phase 8's
+      load test) is a different, already-handled risk (falls back to the
+      question bank on failure) that a Groq-response cache wouldn't touch
+      anyway. Revisit if rehearsal (§7) surfaces a specific slow/flaky
+      moment this doesn't cover.
+- [x] **Found and fixed a real gap not in the doc's original plan**: Phase 7
+      switched generation to Groq (cloud), which means the RAG features now
+      have a failure mode the "everything runs local" original plan never
+      covered — a Groq timeout/rate-limit/outage. `rag_core/pipeline.py`'s
+      `agenerate()` had zero error handling; any Groq failure would have
+      been a raw, un-triaged 500 live on stage. Added `RAGUnavailableError`,
+      caught in all three RAG-backed routers (`/exam/topic-explainer`,
+      `/career/ask`, `/interview/start` and `/ask`), returning a clear 503
+      instead. Verified against a real Groq `AuthenticationError` (not
+      mocked) end to end through each router, and covered by 4 permanent
+      regression tests (`tests/test_rag_graceful_degradation.py`) —
+      including confirming a failed `/interview/start` creates no orphaned
+      session row, and a failed `/interview/{id}/ask` doesn't lose the
+      student's answer (the turn stays retryable).
+- [ ] ~~UI polish pass~~ — blocked on frontend wiring, same as Phase 8's §3-4.
+- [x] Backup snapshot — `scripts/backup_demo_snapshot.sh`, tested, produces
+      a timestamped `backups/` copy (gitignored — real data, not source).
+      Git tag and screen recording are genuinely the user's own actions to
+      take once a specific commit/rehearsal is locked in — not something
+      done here.
+- [ ] ~~3 full rehearsals~~ — the user's own action; needs an actual
+      presentation plan/device/date to rehearse against.
+- [x] `README.md` — consolidated from `backend/README.md`'s setup notes
+      (venv-outside-repo convention, since this path contains a `:` that
+      breaks Python's `venv`) and `frontend/README.md`'s "no backend calls
+      wired up yet" status, plus how to obtain the gitignored
+      `ml_models/`/`mentora_models/`/`vector_store/` artifacts. `.gitignore`
+      verified (model artifacts, `backups/`, `.env`, `test_mentora.db` all
+      excluded — confirmed in Phase 8, re-checked here).
+      `requirements.txt` left unpinned (not frozen via `pip freeze`) — doc's
+      exact-version-pinning makes most sense once there's an actual
+      presentation machine to freeze against; revisit then.
+
+Everything achievable without a wired frontend or an actual scheduled
+presentation is done. What's left — UI polish, rehearsal, final version
+freezing — genuinely needs those two things to exist first. Phase 10 (final
+documentation) can still proceed in parallel, same as the doc's own guidance.

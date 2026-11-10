@@ -1,11 +1,20 @@
 # Mentora Backend
 
 FastAPI backend. Real, database-backed auth (`/auth/*`, `/users/me`) per the
-Phase 1 milestone in `docs/phases/MENTORA_Complete_Project_Plan.md` §11; every
-other router (`exam`, `career`, `interview`, `learning`, `dashboard`,
-`notifications`) returns mock JSON shaped exactly like the future real
-response, per Phase 2's mock-first approach — see
-`docs/phases/MENTORA_Phase2_Frontend_Backend_Wiring.md`.
+Phase 1 milestone in `docs/phases/MENTORA_Complete_Project_Plan.md` §11.
+
+`exam`, `career`, `dashboard`, and `interview` are now real too, not mock:
+the 5 trained models are wired through `ml_core/`'s Model Manager (Phase 6),
+and the RAG chatbot (`rag_core/`, Groq + ChromaDB) backs the topic-explainer/
+career-Q&A/mock-interview endpoints (Phase 7). `learning` and
+`notifications`, and a few sub-endpoints within `exam`/`dashboard`
+(`/exam/timetable`, `/exam/today-topic`, `/dashboard/stats`,
+`/dashboard/score-trend`, `/dashboard/weekly-snapshot`), are still Phase 2's
+mock JSON — see each phase's doc in `docs/phases/` for exactly what's real
+vs. mock and why.
+
+See the top-level `README.md` for full setup (venv, `.env`, seeding, model/
+vector-store artifacts). This file keeps only backend-specific detail.
 
 ## Setup
 

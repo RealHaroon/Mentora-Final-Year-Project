@@ -1,0 +1,18 @@
+TECHNICAL SKILLS
+
+Python, Statistics, Machine Learning, TensorFlow, SQL, Pandas, Scikit-learn, Data Analysis
+
+CERTIFICATIONS
+
+AWS Certified Cloud Practitioner
+Google Data Analytics Certificate
+
+EDUCATION
+
+BSc Computer Science, University of Sindh, GPA 3.7
+
+PROJECTS
+
+Built a student performance prediction model using regression and classification
+techniques on exam score datasets. Analyzed trends in exam preparation data to
+identify at-risk topics and presented findings using Python visualization tools.
