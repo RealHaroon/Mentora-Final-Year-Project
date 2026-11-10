@@ -35,7 +35,7 @@ const SNAPSHOT_LABEL: Record<string, string> = {
 const PROGRESS_CLASS = (score: number) => (score >= 70 ? "" : score >= 50 ? " warn" : " low");
 
 async function loadDashboardData() {
-  const token = cookies().get("mentora_session")?.value;
+  const token = (await cookies()).get("mentora_session")?.value;
   // at-risk-check (M3) is kept out of the main Promise.all: it's a slower
   // model inference call with its own "not enough data yet" outcome, not a
   // page-breaking dependency the way the other 6 calls are.

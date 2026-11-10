@@ -31,7 +31,11 @@ test("dashboard renders real data for every section, including the AI risk check
 
 test("logged-out user cannot reach the dashboard after logging out", async ({ page }) => {
   await page.goto("/dashboard");
-  await page.getByRole("button", { name: "Logout" }).click();
+  // handleLogout (SiteHeader.tsx) awaits the logout fetch, then
+  // router.push("/") — wait for that navigation to actually land before
+  // checking /dashboard again, otherwise this races ahead of the
+  // session cookie actually being cleared in the browser.
+  await Promise.all([page.waitForURL("/"), page.getByRole("button", { name: "Logout" }).click()]);
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login/);
 });

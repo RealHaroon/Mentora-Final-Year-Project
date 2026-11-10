@@ -5,7 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const COOKIE_NAME = "mentora_session";
 
 async function forward(req: NextRequest, path: string[]) {
-  const token = cookies().get(COOKIE_NAME)?.value;
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
   const url = `${API_URL}/${path.join("/")}${req.nextUrl.search}`;
 
   const init: RequestInit = {
@@ -39,15 +39,19 @@ async function forward(req: NextRequest, path: string[]) {
   });
 }
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ path: string[] }> }) {
+  const params = await props.params;
   return forward(req, params.path);
 }
-export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ path: string[] }> }) {
+  const params = await props.params;
   return forward(req, params.path);
 }
-export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ path: string[] }> }) {
+  const params = await props.params;
   return forward(req, params.path);
 }
-export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ path: string[] }> }) {
+  const params = await props.params;
   return forward(req, params.path);
 }

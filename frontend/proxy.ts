@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const PROTECTED = ["/dashboard", "/exam-prep", "/career", "/learning-portal"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const session = request.cookies.get("mentora_session")?.value;
   const { pathname } = request.nextUrl;
 

@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 const SUBJECT_FILTERS = ["Mathematics", "English", "Physics", "Chemistry"];
 
 async function loadPortalData(subject?: string) {
-  const token = cookies().get("mentora_session")?.value;
+  const token = (await cookies()).get("mentora_session")?.value;
   try {
     const [stats, playlist, assignments, materials] = await Promise.all([
       apiFetchServer<LearningStats>("/learning/stats", token),
@@ -38,11 +38,8 @@ async function loadPortalData(subject?: string) {
   }
 }
 
-export default async function LearningPortalPage({
-  searchParams,
-}: {
-  searchParams: { subject?: string };
-}) {
+export default async function LearningPortalPage(props: { searchParams: Promise<{ subject?: string }> }) {
+  const searchParams = await props.searchParams;
   const activeSubject = searchParams.subject;
   const { stats, videos, assignments, materials, error } = await loadPortalData(activeSubject);
 

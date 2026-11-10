@@ -26,8 +26,10 @@ test("register creates a real account, logs in, logs out, and logs back in", asy
 
   await expect(page).toHaveURL(/\/dashboard/);
   // Real registered name should render from a real /users/me fetch, not a
-  // leftover mock — the Phase 2 §8 regression this guards against.
-  await expect(page.getByText("Playwright Tester")).toBeVisible();
+  // leftover mock — the Phase 2 §8 regression this guards against. Scoped
+  // to the heading specifically — Next 16's accessibility route-announcer
+  // div duplicates the same text elsewhere on the page.
+  await expect(page.getByRole("heading", { name: "Playwright Tester" })).toBeVisible();
 
   await page.getByRole("button", { name: "Logout" }).click();
   await expect(page).toHaveURL(/\/login|\/$/);
@@ -37,5 +39,5 @@ test("register creates a real account, logs in, logs out, and logs back in", asy
   await page.getByLabel("Password").fill("testpass123");
   await page.getByRole("button", { name: "Login →" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByText("Playwright Tester")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Playwright Tester" })).toBeVisible();
 });
