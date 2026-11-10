@@ -1,6 +1,8 @@
 # Mentora Frontend
 
-Next.js 14 (App Router) + TypeScript port of the original static HTML mockups. See
+Next.js 16 (App Router) + TypeScript port of the original static HTML mockups —
+upgraded 2026-11-11 from 14.2.35 (fixed its flagged dependency vulnerabilities;
+see that date's commit for the migration notes). See
 `docs/phases/MENTORA_Phase1_Frontend_Documentation.md` for the full technical
 reference (project structure, page-by-page breakdown, forms/fields inventory, and
 the API contract the FastAPI backend needs to implement).
