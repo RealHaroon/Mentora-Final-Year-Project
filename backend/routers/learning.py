@@ -13,6 +13,13 @@ router = APIRouter(prefix="/learning", tags=["learning"])
 # watch history are in-memory, per-process mutable lists (not persisted to
 # the DB — there's no PLAYLIST/WATCH_HISTORY table in the ERD) so
 # add/remove/watch feel real within a session.
+#
+# Known gap, found 2026-11-10 while writing e2e tests against this: these
+# lists are also NOT scoped per user — every `User` hits the exact same
+# module-level list, so one account's add/remove/watch is visible to every
+# other account on this process. Harmless for a single-demo-account FYP
+# walkthrough, genuinely wrong for anything with more than one real user.
+# A real fix means a DB table keyed by user_id, not a patch here.
 
 
 def _youtube_search_url(title: str, source: str) -> str:

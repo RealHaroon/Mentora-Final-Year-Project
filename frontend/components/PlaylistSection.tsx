@@ -51,7 +51,10 @@ export default function PlaylistSection({ initialVideos }: { initialVideos: Play
           duration_min: Number(formData.get("duration_min")),
         }),
       });
-      setVideos((prev) => [...prev, result.video]);
+      // The backend silently no-ops a duplicate title (dedup by title) but
+      // still returns a 200 with the submitted video — appending it
+      // unconditionally would show a second, inconsistent copy locally.
+      setVideos((prev) => (prev.some((v) => v.title === result.video.title) ? prev : [...prev, result.video]));
       setShowAddForm(false);
       e.currentTarget.reset();
     } catch (err) {
