@@ -695,9 +695,17 @@ against; retrieval, which IS local CPU work, still goes through
       models) was written for local Ollama's constraints, which no longer
       apply; `max_tokens=300` is set on the Groq client as the one
       response-length cap carried over.
-- [ ] "Start Mock Interview" on the real `/career` page — not verified,
-      since the frontend isn't wired to the backend at all yet (confirmed
-      in Phase 6: no `fetch`/`axios` calls to `/api/exam|career|dashboard`
+- [ ] "Start Mock Interview" on the real `/career` page — not verified here.
+      **Correction (2026-11-10)**: the reason given below was wrong — the
+      frontend *was* wired (Phase 2, 2026-09-18); this doc's claim
+      otherwise was never actually re-checked. See
+      `docs/phase10/drift_check.md`. The real reason this wasn't verified
+      in Phase 7 still holds, though: this same phase's rewrite of
+      `/interview/start` added a required `career_goal` param that the
+      Phase-2-era frontend never sent, which a 2026-11-10 audit found and
+      fixed. Original note, left for the record: not verified, since
+      the frontend isn't wired to the backend at all yet (confirmed in
+      Phase 6: no `fetch`/`axios` calls to `/api/exam|career|dashboard`
       anywhere in `frontend/`). This is frontend-integration work for a
       later phase, not something Phase 7 itself can complete.
 

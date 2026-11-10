@@ -2,11 +2,11 @@
 # Phase 8 §10 — regression safety net. Run this before every significant
 # change from here on.
 #
-# Deviates from the doc's sketch: no frontend Playwright step. The Next.js
-# frontend isn't wired to this backend at all yet (confirmed in Phase 6 — no
-# fetch/axios calls to /api/exam|career|dashboard anywhere in frontend/), so
-# there is no real frontend-backend integration for Playwright to test
-# against. Add that step back here once Phase 2's actual wiring is done.
+# Deviates from the doc's sketch: no frontend Playwright step. Not because
+# the frontend is unwired — it was wired back in Phase 2, a claim otherwise
+# got this wrong across Phases 6-9 (see docs/phase10/drift_check.md) — but
+# because no Playwright suite has actually been written yet. That's
+# genuinely still open work, not blocked on anything.
 set -e
 
 cd "$(dirname "$0")/.."

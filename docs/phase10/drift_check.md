@@ -64,3 +64,41 @@ where the "what actually happened" record lives.
   live, auto-generated `docs/openapi.json` (exported from the real
   running app, §2.3) — more reliable than cross-checking a hand-written
   table that can drift the moment an endpoint changes.
+
+## A documentation error, not just plan-vs-reality drift (2026-11-10)
+
+Unlike the drift above — plan says one thing, reality correctly did
+another, both honestly recorded — this one is a factual error that
+propagated across three artifacts: Phase 2 (2026-09-18) wired the Next.js
+frontend to a mock backend end to end, closing with its own §8 click-through
+checklist. Phase 6's and Phase 8's docs then stated, as settled fact, that
+the frontend had "no real wiring" / "no `fetch`/`axios` calls anywhere" —
+never re-verified, just carried forward — and Phase 9 repeated it,
+commenting out `start_all.sh`'s frontend line and skipping its own UI-polish
+item on that basis.
+
+**What was actually true**: the wiring existed throughout, built against
+Phase 2's *mock* response shapes. Phases 6-7 then changed several real
+endpoint shapes (`/career/cv-upload`'s `projects`→`degrees`, `/career/
+ai-suggest`'s response shape, `/interview/start`'s now-required
+`career_goal` param, `/interview/{id}/ask`'s combined `answer` field
+replacing separate `ai_feedback`/`next_question`) without the frontend
+being revisited — so the frontend was simultaneously "wired" and
+increasingly broken against the real backend, which is why the "unwired"
+claim went unquestioned for three phases: nobody who believed it had a
+reason to go click through the UI and find otherwise.
+
+**Found by**: re-running the Phase 6 claim's own grep during a Phase 2
+re-audit (`grep -rl "apiFetch\|fetch(" app/ components/ lib/`) turned up
+~15 files, not zero. A full live-browser audit against the running backend
+then found and fixed 8 real bugs (stuck-loading `Promise.all` gating,
+3 crash/422 bugs, 2 response-shape mismatches, 2 missing error/refresh
+cases) — see that commit's message for the itemized list.
+
+**Fixed**: `frontend/lib/types.ts` and the affected pages; `README.md`,
+`frontend/README.md`, `scripts/start_all.sh`, `scripts/start_frontend.sh`
+(frontend launch uncommented); correction notes added in place in Phase
+8's and Phase 9's docs next to the original false claims, which are left
+otherwise unedited for the historical record — same philosophy as the
+quantization and RAG drift above, extended to "a stated fact turned out to
+be wrong," not just "the plan changed."

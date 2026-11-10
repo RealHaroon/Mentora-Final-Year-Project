@@ -484,6 +484,16 @@ demo? There's no universally right answer here — it depends on what you observ
 
 ## 13. Definition of done
 
+> **Correction (2026-11-10)**: the premise below was wrong. The frontend
+> *was* wired to this backend — Phase 2 built it, before this phase ever
+> ran. The "no `fetch`/`axios` calls anywhere" claim was never actually
+> re-verified here; it got carried forward as settled fact without
+> re-checking. A 2026-11-10 audit (see `docs/phase10/drift_check.md`) found
+> the real wiring plus the drift it had accumulated against Phases 6-7's
+> changed response shapes, and fixed it. §3-4 were skipped for a reason
+> that didn't hold — they're genuinely still open, not blocked on anything.
+> Original scope-decision note, left as-is for the historical record:
+>
 > **Scope decision, made explicitly with the user before starting**: §3
 > (Playwright) and §4 (the manual browser checklist) both assume the Next.js
 > frontend calls this backend. It doesn't — confirmed in Phase 6 (no

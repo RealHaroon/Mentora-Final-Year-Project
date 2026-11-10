@@ -14,7 +14,16 @@ npm run dev          # http://localhost:3000, hot reload
 npm run build && npm run start
 ```
 
-No backend calls are wired up yet — every page renders static/mock data. Once the
-FastAPI backend exists, set `NEXT_PUBLIC_API_URL` in a `.env.local` file (see
-Section 10 of the doc above) and start wiring `fetch()` calls in per the checklist
-in Section 12.
+Wired to the real FastAPI backend (Phase 2) — set `NEXT_PUBLIC_API_URL` in
+`.env.local` (see Section 10 of the doc above) and start the backend first.
+Every page calls real endpoints; see `docs/phases/MENTORA_Phase2_Frontend_Backend_Wiring.md`
+for how the auth/proxy plumbing works.
+
+This was built against Phase 2's original mock backend response shapes.
+Phases 6-7 later changed several real endpoint shapes without the frontend
+being revisited — a 2026-11-10 audit (see the repo's git log for that date)
+found and fixed the resulting drift (stuck-loading bugs, a few crashes on
+real responses, two missing required params). If something still looks
+wrong against a specific endpoint, check that endpoint's actual response
+shape in `docs/openapi.json` against `lib/types.ts` first — that mismatch
+is the most common cause.

@@ -351,6 +351,16 @@ much better than discovering it live.
 
 ## 10. Definition of done
 
+> **Correction (2026-11-10)**: the "frontend still isn't wired" premise
+> below was wrong, same error as Phase 8's (see that phase's doc for the
+> correction and `docs/phase10/drift_check.md`). Phase 2 had already wired
+> it; this phase inherited the false claim rather than re-checking. Two
+> concrete things below were decided on that wrong basis and are now
+> stale: `start_all.sh`'s frontend line was left commented out (uncommented
+> 2026-11-10) and the "UI polish pass" item below was marked blocked (it
+> wasn't — it's just not done). Original scope-decision note, left as-is
+> for the historical record:
+>
 > **Scope decision, made explicitly with the user before starting** (same
 > pattern as Phase 8): the frontend still isn't wired to this backend, and
 > rehearsal/presentation-hardware items are inherently the user's own
@@ -362,10 +372,10 @@ much better than discovering it live.
       `.bat`: `scripts/start_backend.sh`, `scripts/start_frontend.sh`,
       `scripts/start_all.sh`. No Ollama step, unlike the doc's sketch —
       Phase 7 already swapped to Groq (cloud), nothing local to launch.
-      `start_all.sh` currently starts backend-only by design (frontend line
-      commented out, with a note to uncomment once it's actually wired) —
-      starting an unwired frontend as part of "the demo" would be
-      misleading. **Tested from a genuine cold start**, not just read
+      `start_all.sh` started backend-only from here through 2026-11-10 on
+      the mistaken belief the frontend wasn't wired (it was — see this
+      section's top correction note); its frontend line is uncommented as
+      of that date. **Tested from a genuine cold start**, not just read
       through: preflight passed, backend came up, Swagger docs opened
       automatically.
 - [x] `preflight_check.py` — adapted: checks `GROQ_API_KEY` is set AND
@@ -422,7 +432,9 @@ much better than discovering it live.
       including confirming a failed `/interview/start` creates no orphaned
       session row, and a failed `/interview/{id}/ask` doesn't lose the
       student's answer (the turn stays retryable).
-- [ ] ~~UI polish pass~~ — blocked on frontend wiring, same as Phase 8's §3-4.
+- [ ] ~~UI polish pass~~ — marked blocked on frontend wiring, same wrong
+      premise as Phase 8's §3-4 (see top correction note). Genuinely still
+      open, not blocked on anything.
 - [x] Backup snapshot — `scripts/backup_demo_snapshot.sh`, tested, produces
       a timestamped `backups/` copy (gitignored — real data, not source).
       Git tag and screen recording are genuinely the user's own actions to
@@ -432,8 +444,9 @@ much better than discovering it live.
       presentation plan/device/date to rehearse against.
 - [x] `README.md` — consolidated from `backend/README.md`'s setup notes
       (venv-outside-repo convention, since this path contains a `:` that
-      breaks Python's `venv`) and `frontend/README.md`'s "no backend calls
-      wired up yet" status, plus how to obtain the gitignored
+      breaks Python's `venv`) and `frontend/README.md`'s then-stated "no
+      backend calls wired up yet" status (wrong — see top correction note;
+      both READMEs updated 2026-11-10), plus how to obtain the gitignored
       `ml_models/`/`mentora_models/`/`vector_store/` artifacts. `.gitignore`
       verified (model artifacts, `backups/`, `.env`, `test_mentora.db` all
       excluded — confirmed in Phase 8, re-checked here).
@@ -441,7 +454,10 @@ much better than discovering it live.
       exact-version-pinning makes most sense once there's an actual
       presentation machine to freeze against; revisit then.
 
-Everything achievable without a wired frontend or an actual scheduled
-presentation is done. What's left — UI polish, rehearsal, final version
-freezing — genuinely needs those two things to exist first. Phase 10 (final
-documentation) can still proceed in parallel, same as the doc's own guidance.
+Everything believed achievable without a wired frontend, or needing an
+actual scheduled presentation, is done. The frontend-wiring premise was
+wrong (see top correction note) — UI polish and the Playwright/manual
+checklist work (Phase 8 §3-4) are genuinely open, not blocked. Rehearsal
+and final version freezing still need a scheduled presentation. Phase 10
+(final documentation) can still proceed in parallel, same as the doc's own
+guidance.

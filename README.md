@@ -13,9 +13,13 @@ from each phase's own setup notes per
 - **Backend**: fully real — database-backed auth, all 5 trained models wired
   through a Model Manager (Phase 6), RAG chatbot wired (Phase 7), integration-
   tested (Phase 8).
-- **Frontend**: Next.js app exists and runs, but **has no real API calls
-  wired up yet** — every page renders Phase 2's static/mock data. See
-  `frontend/README.md`.
+- **Frontend**: wired to the real backend (Phase 2) and calling real
+  endpoints throughout. **Correction**: Phases 8 and 9's docs state the
+  frontend "isn't wired" and scope backend-only work on that basis — that
+  was wrong; Phase 2 wired it before either phase started, just against
+  response shapes that Phases 6-7 later changed without the frontend being
+  revisited. A 2026-11-10 audit found and fixed the resulting drift. See
+  `frontend/README.md` and `docs/phase10/drift_check.md`.
 
 ## 1. Get the trained models and vector store (not in git — too large)
 
@@ -83,10 +87,10 @@ cd backend
 
 ```bash
 ./scripts/preflight_check.py   # catches port conflicts, missing models, a bad/missing Groq key — before you hit it live
-./scripts/start_all.sh         # starts the backend, opens Swagger docs at :8000/docs
+./scripts/start_all.sh         # starts backend + frontend, opens the app at :3000
 ```
 
-Frontend (standalone, mock data only — see "Current state" above):
+Frontend only (if the backend is already running separately):
 ```bash
 ./scripts/start_frontend.sh    # http://localhost:3000
 ```
@@ -98,15 +102,16 @@ Frontend (standalone, mock data only — see "Current state" above):
 ```
 
 27 backend tests (model wrappers, RAG retrieval, full exam/career/auth flows,
-security checks). No Playwright/frontend e2e tests yet — nothing real for
-them to test against until the frontend is wired up.
+security checks). No Playwright/frontend e2e tests yet — Phases 8-9 skipped
+them believing the frontend wasn't wired (it was; see "Current state"
+above), so this is genuinely still open, not blocked on anything.
 
 ## Project layout
 
 ```
 backend/            FastAPI app — routers, ml_core/ (Model Manager + 5 model
                      wrappers), rag_core/ (RAG pipeline), tests/
-frontend/            Next.js app (mock data only, see above)
+frontend/            Next.js app, wired to the real backend (see above)
 datasets/            Scripts that built mentora_data/ (Phase 3)
 notebooks/           Colab training notebooks (Phase 4)
 scripts/phase5/       Quantization + benchmark scripts
@@ -119,6 +124,7 @@ docs/phases/          Full phase-by-phase technical history/decisions
 
 Each phase's doc in `docs/phases/` documents not just the plan but what
 actually happened — bugs found, decisions made and why, deviations from the
-original plan (e.g. Groq instead of local Ollama in Phase 7, backend-only
-scope in Phases 8-9 since the frontend isn't wired). Worth reading before
-assuming the plan is what shipped.
+original plan (e.g. Groq instead of local Ollama in Phase 7). Worth reading
+before assuming the plan is what shipped — including Phases 8-9's own
+backend-only scope decision, which turned out to rest on a wrong premise;
+see `docs/phase10/drift_check.md` for the correction.
