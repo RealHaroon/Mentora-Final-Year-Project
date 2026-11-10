@@ -101,7 +101,7 @@ Frontend only (if the backend is already running separately):
 ./scripts/run_all_tests.sh
 ```
 
-27 backend tests (model wrappers, RAG retrieval, full exam/career/auth flows,
+31 backend tests (model wrappers, RAG retrieval, full exam/career/auth flows,
 security checks).
 
 Frontend e2e (Playwright), added 2026-11-10 — closes the gap Phases 8-9 left
