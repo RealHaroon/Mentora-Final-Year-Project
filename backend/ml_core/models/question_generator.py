@@ -1,3 +1,13 @@
+"""
+M2 wrapper — FLAN-T5-Large + LoRA (merged, fp16), the heaviest on-demand
+model. Already known weak at training time (BLEU-4/ROUGE-L well under
+target, see docs/phase10/model_results_table.md); infer() retries with
+sampling if the first (deterministic) attempt doesn't produce valid JSON,
+and raises ValueError if none of the attempts do — callers (routers)
+catch that and fall back to the real question bank rather than show a
+broken page.
+"""
+
 import json
 
 import torch

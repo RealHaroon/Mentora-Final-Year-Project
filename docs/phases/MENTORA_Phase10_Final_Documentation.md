@@ -281,22 +281,90 @@ and worth closing before the actual defense.
 
 ## 11. Definition of done — final submission checklist
 
-- [ ] All thesis chapters mapped and drafted (§1)
-- [ ] Architecture diagrams verified against actual implementation, not just against
-      the original plan (§2.2)
-- [ ] API reference exported from the live, real OpenAPI spec (§2.3)
-- [ ] Model results table filled in with real achieved numbers, training curves
-      included, any missed targets honestly reported with mitigation discussion (§3)
-- [ ] Testing & results chapter written from Phase 8's actual findings, including the
-      estimated-vs-measured RAM comparison
-- [ ] The hardware-adaptation story written up as its own structured subsection (§5)
-- [ ] Code documentation pass done, `pdoc` reference generated (§6)
-- [ ] Consolidated setup guide written and — ideally — tested by literally following
-      it on a clean environment once
-- [ ] Viva question bank built and rehearsed out loud, not just written (§8)
-- [ ] Repository hygiene pass complete — no leaked secrets in history, license/tag in
-      place (§9)
+> **Scope decision, made explicitly with the user before starting**: this
+> phase is mostly thesis-writing, which depends on things not available
+> here — the user's specific program's required chapter structure,
+> formatting, word counts. Scoped to **artifacts only**: everything below
+> is a standalone file ready to drop into a thesis, not drafted prose in
+> any particular program's template. Full chapter drafting and rehearsal
+> are explicitly the user's own next step.
 
-With this checked off, the project is complete end to end: designed, built, trained,
-optimized for real constrained hardware, tested, rehearsed, and documented — every
-phase from the original master plan closed out.
+- [ ] ~~All thesis chapters mapped and drafted (§1)~~ — out of scope by the
+      decision above; §1's chapter-mapping table in this doc is still a
+      good starting map, just not filled in with prose here.
+- [x] Architecture/data-model drift check (§2.2) — `docs/phase10/
+      drift_check.md`. **Found one real drift, corrected it**: the master
+      plan's §5 model table still says M1/M2/M5 use "ONNX + ONNX Runtime
+      dynamic quant" — that was the original plan, but it was superseded
+      before implementation (AVX2 turned out to be present, removing the
+      need for ONNX) and then superseded *again* by an unrelated bug
+      (`torch.quantization` itself broken in this environment, not an
+      AVX2 problem) — actual shipped approach is float16 casting. The ERD
+      itself has zero drift: all 13 tables match exactly between the plan
+      and `backend/database/models.py`.
+- [x] API reference exported from the live OpenAPI spec (§2.3) —
+      `docs/openapi.json`, 36 real endpoints, pretty-printed for
+      readability. Exported from the actually-running app, not
+      hand-transcribed.
+- [x] Model results table (§3) — `docs/phase10/model_results_table.md`,
+      pulled directly from `notebooks/experiment_log.md`'s real numbers.
+      Every model below its original target (M1, M2, M3) has an honest,
+      specific root-cause writeup, not just a bare number — and M5's
+      0.9497, which *beat* its target, is flagged with the one caveat
+      that actually matters (measured on auto-tagged gold data, the
+      manual review pass was never completed). Training curves (§3.2) not
+      generated — no W&B logging was used during training, and
+      retroactively reconstructing per-epoch curves from this project's
+      saved checkpoints is a Phase 4 archival task, not something this
+      documentation pass should fabricate data for.
+- [x] Testing & results summary (§4) — `docs/phase10/
+      testing_results_summary.md`, condensed from Phase 8's actual
+      findings, including the estimated-vs-measured RAM table the doc
+      asks for and the real Locust queuing numbers.
+- [x] The hardware-adaptation story (§5) — `docs/phase10/
+      hardware_adaptation_story.md`, **rewritten from the doc's original
+      sketch, which describes a plan that was never actually
+      implemented** (see the drift-check finding above). The real story —
+      AVX2 confirmed present, then a second, unrelated quantization bug
+      found and fixed — follows the same problem/investigation/solution/
+      verification/outcome structure, just with what actually happened.
+- [x] Code documentation pass + `pdoc` reference (§6) — added module-level
+      docstrings to the non-obvious core files (`ModelManager`,
+      `RAGPipeline`, the CV-NER BIO-decoder, `QuestionGenerator`,
+      `registry.py`) that only had inline `#` comments before (not picked
+      up by `pdoc`). Generated `docs/code_reference/` from `ml_core`,
+      `services`, `rag_core`, `routers` — verified the new docstrings
+      actually render in the output, not just assumed. Per-subsystem
+      READMEs: `backend/`, `frontend/` already existed; added the missing
+      `rag_pipelines/README.md`. No README added inside `ml_models/` —
+      it's entirely gitignored (not a tracked directory at all), so a
+      README placed there wouldn't be committed; the top-level `README.md`
+      already covers how to obtain/regenerate it.
+- [x] Consolidated setup guide (§7) — `docs/phase10/SETUP_GUIDE.md`, the
+      fuller version of Phase 9's brief top-level `README.md`: every
+      `.env` variable tabulated, plus how to reproduce Phase 3/4/5's data
+      prep → training → export pipeline from scratch, not just run the
+      pre-trained artifacts. Not tested on a genuinely clean/separate
+      machine (none available) — tested by re-deriving each step against
+      what's actually in this repo instead.
+- [x] Viva question bank (§8) — `docs/phase10/viva_question_bank.md`, 13
+      real questions with real, specific answers drawn from this
+      project's actual decisions and bugs — including two the original
+      doc's template didn't anticipate ("why Groq instead of Ollama" and
+      "why does M3 predict the wrong direction"), both genuine findings
+      from this project's own history. **Rehearsing these out loud is the
+      user's own next step** — that part can't be done on their behalf.
+- [x] Repository hygiene (§9) — `docs/phase10/repo_hygiene_report.md`: full
+      git-history secret scan (clean — only test/demo fixture values and
+      code identifiers matched, no real credential ever committed),
+      `.gitignore` coverage re-verified, `LICENSE` confirmed present and
+      correctly filled in (MIT). Git tag and any commit-history rewrite
+      deliberately **not** done — tagging "the final version" and
+      rewriting history are both decisions only the user should make, at
+      the point they're actually ready to lock in a submission, not
+      something to do proactively mid-development.
+
+Everything achievable as a standalone artifact, without needing the user's
+specific thesis template or their own rehearsal, is done. What's left —
+drafting the actual chapter prose in that template, and rehearsing the
+viva answers out loud — is genuinely the user's own next step from here.

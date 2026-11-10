@@ -1,3 +1,6 @@
+"""Builds the ModelManager's registry — the one place that knows every
+model's file path and runtime config, called once at app startup."""
+
 import json
 
 from config import settings

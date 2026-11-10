@@ -1,3 +1,13 @@
+"""
+Singleton responsible for the three constraints Phase 6 identified: RAM
+(only M3/M4 stay resident; M1/M2/M5 lazy-load and idle-unload after 5
+minutes), the event loop (every blocking model call runs via
+asyncio.to_thread, never directly inside an async route), and cross-model
+concurrency (a shared semaphore serializes M1/M2/M5 against each other so
+two heavy models are never loaded+running at once on this RAM-constrained
+machine).
+"""
+
 import asyncio
 import logging
 import time

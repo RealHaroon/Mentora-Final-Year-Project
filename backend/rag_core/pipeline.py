@@ -1,3 +1,13 @@
+"""
+Base class for the RAG pipelines (ExamRAG, CareerRAG, InterviewRAG):
+retrieve relevant chunks from a local ChromaDB collection, then generate a
+grounded answer via Groq. Generation is deliberately NOT routed through
+Phase 6's heavy_lock semaphore — that lock exists to stop CPU-bound jobs
+competing for this laptop's cores, but Groq's generation runs on Groq's
+own servers, so there's no local contention to serialize against.
+Retrieval (local, CPU-bound) still goes through asyncio.to_thread.
+"""
+
 import asyncio
 import logging
 from abc import ABC, abstractmethod

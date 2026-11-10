@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 .env
-mentora.db
-test_mentora.db
+mentora.db*
+test_mentora.db*
 uploads/
 .pytest_cache/

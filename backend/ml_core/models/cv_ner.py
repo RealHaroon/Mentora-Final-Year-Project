@@ -1,3 +1,13 @@
+"""
+M5 wrapper — BERT token classification over CV/resume text (CERT, DEGREE,
+GPA, SKILL tags; no PROJECT tag exists in this model's real label set,
+despite the Phase 6 planning doc assuming one). The BIO-decode logic in
+_decode_bio() is the fiddliest part of this file: it has to merge a
+word's wordpiece subtokens back into whole words without duplicating a
+word when the model tags two subtokens of the same word as B- then I-
+(a real bug caught via testing, not a hypothetical).
+"""
+
 import re
 
 import torch
