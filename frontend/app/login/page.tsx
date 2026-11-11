@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthShell from "@/components/AuthShell";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -68,8 +69,7 @@ export default function LoginPage() {
 
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input
-            type="password"
+          <PasswordInput
             id="password"
             name="password"
             placeholder="Your password"

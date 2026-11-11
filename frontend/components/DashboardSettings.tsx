@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, ApiError } from "@/lib/api";
+import PasswordInput from "@/components/PasswordInput";
 import type { NotificationPrefs } from "@/lib/types";
 
 type Panel = null | "profile" | "password" | "notifications";
@@ -233,15 +234,15 @@ export default function DashboardSettings({
         <form onSubmit={handlePasswordSubmit} className="panel mt-24">
           <div className="field">
             <label htmlFor="current_password">Current Password</label>
-            <input type="password" id="current_password" name="current_password" required />
+            <PasswordInput id="current_password" name="current_password" required />
           </div>
           <div className="field">
             <label htmlFor="new_password">New Password</label>
-            <input type="password" id="new_password" name="new_password" minLength={8} required />
+            <PasswordInput id="new_password" name="new_password" minLength={8} required />
           </div>
           <div className="field">
             <label htmlFor="confirm_password">Confirm New Password</label>
-            <input type="password" id="confirm_password" name="confirm_password" minLength={8} required />
+            <PasswordInput id="confirm_password" name="confirm_password" minLength={8} required />
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Saving…" : "Change password"}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthShell from "@/components/AuthShell";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -107,8 +108,7 @@ export default function RegisterPage() {
 
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input
-            type="password"
+          <PasswordInput
             id="password"
             name="password"
             placeholder="Min. 8 characters"
@@ -120,8 +120,7 @@ export default function RegisterPage() {
 
         <div className="field">
           <label htmlFor="confirm_password">Confirm Password</label>
-          <input
-            type="password"
+          <PasswordInput
             id="confirm_password"
             name="confirm_password"
             placeholder="Repeat password"

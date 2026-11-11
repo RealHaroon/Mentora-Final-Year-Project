@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import AuthShell from "@/components/AuthShell";
+import PasswordInput from "@/components/PasswordInput";
 import { apiFetch, ApiError } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
@@ -124,8 +125,7 @@ export default function ForgotPasswordPage() {
         </div>
         <div className="field">
           <label htmlFor="new_password">New Password</label>
-          <input
-            type="password"
+          <PasswordInput
             id="new_password"
             name="new_password"
             placeholder="Min. 8 characters"
@@ -136,8 +136,7 @@ export default function ForgotPasswordPage() {
         </div>
         <div className="field">
           <label htmlFor="confirm_password">Confirm New Password</label>
-          <input
-            type="password"
+          <PasswordInput
             id="confirm_password"
             name="confirm_password"
             placeholder="Repeat password"

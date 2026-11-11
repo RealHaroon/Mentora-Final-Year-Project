@@ -1,37 +1,81 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import ExamSession, Notification, TopicScore, User
+from database.models import CareerProfile, CareerRanking, ExamSession, Notification, TopicScore, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
-# MOCK — matches MENTORA_Phase2_Frontend_Backend_Wiring.md §1.1 exactly.
+# weekly-snapshot and the frontend's whole exam/timetable system are still
+# MOCK (matches MENTORA_Phase2_Frontend_Backend_Wiring.md §1.1) — there's no
+# real "study schedule" concept in the schema yet, and selecting subjects on
+# /exam-prep doesn't change it. Found 2026-11-11 via a user testing their own
+# fresh account and seeing fixed numbers regardless of real activity.
 
 
 @router.get("/stats")
-def get_stats(user: User = Depends(get_current_user)):
+def get_stats(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    sessions = db.query(ExamSession).filter(ExamSession.user_id == user.user_id).all()
+    scored = [s.total_score for s in sessions if s.total_score is not None]
+    avg_score = round(sum(scored) / len(scored)) if scored else 0
+
+    now = utcnow()
+    week_ago = now - timedelta(days=7)
+    two_weeks_ago = now - timedelta(days=14)
+    this_week = [s.total_score for s in sessions if s.total_score is not None and s.start_time >= week_ago]
+    last_week = [
+        s.total_score for s in sessions
+        if s.total_score is not None and two_weeks_ago <= s.start_time < week_ago
+    ]
+    avg_score_delta = (
+        round(sum(this_week) / len(this_week) - sum(last_week) / len(last_week))
+        if this_week and last_week
+        else 0
+    )
+
+    top_ranking = (
+        db.query(CareerRanking)
+        .filter(CareerRanking.user_id == user.user_id)
+        .order_by(CareerRanking.match_score.desc())
+        .first()
+    )
+    top_career_match = None
+    if top_ranking is not None:
+        career = db.get(CareerProfile, top_ranking.career_id)
+        top_career_match = {
+            "title": career.title if career else "Unknown",
+            "fit_percent": round(top_ranking.match_score),
+        }
+
     return {
-        "exam_sessions": 24,
-        "avg_score": 72,
-        "avg_score_delta": 5,
-        "videos_watched": 38,
-        "videos_watched_this_week": 14,
-        "top_career_match": {"title": "Data Scientist", "fit_percent": 88},
+        "exam_sessions": len(sessions),
+        "avg_score": avg_score,
+        "avg_score_delta": avg_score_delta,
+        # Still mock — videos_in_playlist/watch-history (backend/routers/
+        # learning.py) are in-memory and not scoped per user at all, so
+        # there's no real per-user count to report yet. See that file's
+        # header comment and docs/phase10/viva_question_bank.md.
+        "videos_watched": 0,
+        "videos_watched_this_week": 0,
+        "top_career_match": top_career_match,
     }
 
 
 @router.get("/score-trend")
-def get_score_trend(sessions: int = 10, user: User = Depends(get_current_user)):
-    return {
-        "points": [
-            {"session": f"S{i + 1}", "score": v}
-            for i, v in enumerate([55, 60, 68, 65, 75, 72, 82, 80, 90, 88][:sessions])
-        ]
-    }
+def get_score_trend(sessions: int = 10, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    rows = (
+        db.query(ExamSession)
+        .filter(ExamSession.user_id == user.user_id, ExamSession.total_score.is_not(None))
+        .order_by(ExamSession.start_time.desc())
+        .limit(sessions)
+        .all()
+    )[::-1]
+    return {"points": [{"session": f"S{i + 1}", "score": r.total_score} for i, r in enumerate(rows)]}
 
 
 @router.get("/weekly-snapshot")

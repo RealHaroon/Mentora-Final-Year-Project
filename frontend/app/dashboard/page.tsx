@@ -149,9 +149,15 @@ export default async function DashboardPage() {
             <div className="stat-cell">
               <div className="stat-label">Career Match (top)</div>
               <div className="stat-num" style={{ fontSize: "1.2rem" }}>
-                {stats?.top_career_match.title ?? "—"}
+                {stats?.top_career_match?.title ?? "—"}
               </div>
-              <div className="stat-sub">{stats ? `${stats.top_career_match.fit_percent}% fit` : ""}</div>
+              <div className="stat-sub">
+                {stats?.top_career_match
+                  ? `${stats.top_career_match.fit_percent}% fit`
+                  : stats
+                    ? "Upload a CV on the Career page to see this"
+                    : ""}
+              </div>
             </div>
           </div>
 

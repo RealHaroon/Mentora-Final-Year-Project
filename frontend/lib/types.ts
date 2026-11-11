@@ -20,7 +20,9 @@ export interface DashboardStats {
   avg_score_delta: number;
   videos_watched: number;
   videos_watched_this_week: number;
-  top_career_match: { title: string; fit_percent: number };
+  // null until the user has uploaded a CV and viewed /career at least once
+  // (that's when CareerRanking rows first get computed and stored).
+  top_career_match: { title: string; fit_percent: number } | null;
 }
 
 export interface ScoreTrendPoint {
