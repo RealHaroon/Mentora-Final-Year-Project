@@ -71,6 +71,12 @@ export interface TimetableResponse {
   rows: TimetableRow[];
 }
 
+export interface ExamPreferences {
+  subjects: string[];
+  test_date: string | null;
+  study_mode: string | null;
+}
+
 export interface TodayTopicResponse {
   topic: string;
   explainer: { summary: string; points: string[] };

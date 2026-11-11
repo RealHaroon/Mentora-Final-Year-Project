@@ -1,9 +1,10 @@
 import random
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from database.models import Question, TopicScore, User, utcnow
+from database.models import ExamSession, Question, StudentIntelligenceProfile, TopicScore, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from rag_core.exam_rag import ExamRAG
@@ -15,36 +16,115 @@ router = APIRouter(prefix="/exam", tags=["exam"])
 
 _exam_rag = ExamRAG()
 
-# /timetable still mock — depends on the exam-prep scheduling feature, not
-# the Model Manager or the RAG pipeline. /subjects still has nowhere real
-# to persist to.
+_WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+_DEFAULT_SUBJECTS = ["Mathematics"]
 
 
-@router.get("/timetable")
-def get_timetable(user: User = Depends(get_current_user)):
+def _get_or_create_sip(db: Session, user: User) -> StudentIntelligenceProfile:
+    sip = db.query(StudentIntelligenceProfile).filter(StudentIntelligenceProfile.user_id == user.user_id).first()
+    if sip is None:
+        sip = StudentIntelligenceProfile(user_id=user.user_id)
+        db.add(sip)
+        db.commit()
+        db.refresh(sip)
+    return sip
+
+
+def _get_prefs(db: Session, user: User) -> dict:
+    # priority_queue is a generic JSON field (ERD) — repurposed here to hold
+    # the whole small prefs blob (subjects/test_date/study_mode) rather than
+    # adding three new columns for what's still a small, evolving feature.
+    sip = _get_or_create_sip(db, user)
+    prefs = sip.priority_queue or {}
+    if not prefs.get("subjects"):
+        prefs["subjects"] = _DEFAULT_SUBJECTS
+    return prefs
+
+
+def _topic_for(db: Session, subject: str, seed: str) -> str:
+    topics = [t for (t,) in db.query(Question.topic).filter(Question.subject == subject).distinct().all()]
+    if not topics:
+        return subject
+    return random.Random(seed).choice(sorted(topics))
+
+
+def _build_week(db: Session, user: User, subjects: list[str]) -> list[dict]:
+    today_idx = date.today().weekday()  # 0=Mon .. 6=Sun
+    rows = []
+    for i, day in enumerate(_WEEKDAYS):
+        subject = subjects[i % len(subjects)]
+        topic = _topic_for(db, subject, seed=f"{user.user_id}-{date.today().isocalendar()[1]}-{day}")
+        if i == today_idx:
+            status = "today"
+        elif i < today_idx:
+            has_session = (
+                db.query(ExamSession)
+                .filter(ExamSession.user_id == user.user_id, ExamSession.subject == subject)
+                .first()
+                is not None
+            )
+            status = "done" if has_session else "missed"
+        else:
+            status = "pending"
+        rows.append({"day": day, "topic": topic, "subject": subject, "duration": "2 hrs", "status": status})
+    return rows
+
+
+@router.get("/subjects")
+def get_subjects(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    prefs = _get_prefs(db, user)
     return {
-        "days_to_exam": 47,
-        "rows": [
-            {"day": "Monday", "topic": "Algebra — Quadratic Equations", "subject": "Mathematics", "duration": "2 hrs", "status": "pending"},
-            {"day": "Tuesday", "topic": "Reading Comprehension", "subject": "English", "duration": "1.5 hrs", "status": "done"},
-            {"day": "Wednesday", "topic": "Grammar — Tenses & Voice", "subject": "English", "duration": "2 hrs", "status": "today"},
-            {"day": "Thursday", "topic": "Geometry — Lines & Angles", "subject": "Mathematics", "duration": "2 hrs", "status": "missed"},
-            {"day": "Friday", "topic": "Revision + MCQ Test", "subject": "Mixed", "duration": "1 hr", "status": "pending"},
-        ],
+        "subjects": prefs["subjects"],
+        "test_date": prefs.get("test_date"),
+        "study_mode": prefs.get("study_mode"),
     }
 
 
+@router.patch("/subjects")
+def update_subjects(payload: SubjectsUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    sip = _get_or_create_sip(db, user)
+    sip.priority_queue = {
+        "subjects": payload.subjects or _DEFAULT_SUBJECTS,
+        "test_date": payload.test_date,
+        "study_mode": payload.study_mode.value if payload.study_mode else None,
+    }
+    db.commit()
+    return {"detail": "Preferences saved", **sip.priority_queue}
+
+
+@router.get("/timetable")
+def get_timetable(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    prefs = _get_prefs(db, user)
+    days_to_exam = 47
+    if prefs.get("test_date"):
+        try:
+            days_to_exam = max(0, (date.fromisoformat(prefs["test_date"]) - date.today()).days)
+        except ValueError:
+            pass  # malformed date from an old/manual request — fall back to the default above
+    return {"days_to_exam": days_to_exam, "rows": _build_week(db, user, prefs["subjects"])}
+
+
 @router.get("/today-topic")
-def get_today_topic(user: User = Depends(get_current_user)):
+async def get_today_topic(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    prefs = _get_prefs(db, user)
+    week = _build_week(db, user, prefs["subjects"])
+    today_row = next((r for r in week if r["status"] == "today"), week[0])  # weekend fallback: Monday's plan
+    topic = today_row["topic"]
+
+    try:
+        explainer_text = await _exam_rag.answer(f"Explain {topic} for {today_row['subject']} exam preparation")
+    except RAGUnavailableError:
+        explainer_text = (
+            f"AI explainer is temporarily unavailable — try the 'Ask AI about this topic' box below once it's back."
+        )
+
     return {
-        "topic": "Quadratic Equations",
-        "explainer": {
-            "summary": "A quadratic equation has the form ax² + bx + c = 0. Key methods:",
-            "points": ["Factorization method", "Quadratic formula", "Completing the square"],
-        },
+        "topic": topic,
+        "explainer": {"summary": explainer_text, "points": []},
+        # No real video catalog exists yet — a genuine YouTube search for the
+        # real topic, not a fabricated specific video/channel/duration.
         "videos": [
-            {"title": "Quadratic Equations — Full Chapter", "source": "MathCity.org", "duration_min": 18},
-            {"title": "Quadratic Formula — Step by Step", "source": "Khan Academy", "duration_min": 12},
+            {"title": f"{topic} — Overview", "source": "YouTube search", "duration_min": 0},
         ],
     }
 
@@ -74,8 +154,17 @@ async def get_mcq(
     # not a classifier, and already documented as weak — see
     # scripts/phase5/README.md) — a demo where one bad generation crashes the
     # exam page is worse than quietly serving a question from the bank.
+    #
+    # 2026-11-11: topic now defaults to today's real scheduled topic (same
+    # one /exam/today-topic shows) instead of an unconditional fixed string
+    # — found via a user testing their own account that selecting subjects
+    # on /exam-prep had no visible effect anywhere, including here.
     manager: ModelManager = request.app.state.model_manager
-    topic = topic or "General Logical Reasoning"
+    if topic is None:
+        prefs = _get_prefs(db, user)
+        week = _build_week(db, user, prefs["subjects"])
+        today_row = next((r for r in week if r["status"] == "today"), week[0])
+        topic = today_row["topic"]
 
     generated_by = "FLAN-T5"
     try:
@@ -152,9 +241,3 @@ async def submit_mcq(
         "correct_answer": question.correct_answer,
         "weak_topics_flagged": weak_topics,
     }
-
-
-@router.patch("/subjects")
-def update_subjects(payload: SubjectsUpdate, user: User = Depends(get_current_user)):
-    # MOCK — Phase 6 persists this to SIP.priority_queue / user prefs.
-    return {"detail": "Preferences saved", **payload.model_dump()}

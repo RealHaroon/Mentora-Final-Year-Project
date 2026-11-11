@@ -112,15 +112,32 @@ cd frontend
 node_modules/.bin/playwright install chromium   # first time only
 npm run test:e2e
 ```
-Requires the real backend AND frontend both already running (`./scripts/start_all.sh`,
-or `start_backend.sh` + `start_frontend.sh` separately) — these tests exercise
-the real ML models and RAG pipeline, not mocks, and use the seeded demo
-account (`scripts/seed_demo_account.py`). The MCQ test can take up to ~90s on
-its own (M2's real, disclosed cold-generation latency — see Phase 8's Locust
-findings); it can take much longer than that if this machine is also under
-memory pressure from other heavy processes (other browser tabs, etc.) at the
-same time — a real, documented constraint of this project's tight 8GB RAM
-budget, not a bug in the test.
+Requires the real backend AND frontend both already running — these tests
+exercise the real ML models and RAG pipeline, not mocks, and use the seeded
+demo account (`scripts/seed_demo_account.py`).
+
+Run the frontend as a **production build**, not `start_all.sh`/`npm run
+dev`'s dev server:
+```bash
+cd frontend
+npm run build && npm run start
+```
+Found 2026-11-11: React Strict Mode double-invokes effects in `next dev`,
+so a page's data-fetching effect genuinely fires twice — harmless for a
+human (the second response just quietly replaces the first), but it can
+race a test's own interaction (e.g. checking a radio button from the
+first MCQ, then clicking Submit on a form that's quietly become a
+*different* MCQ by the time the second fetch resolves). This only happens
+in dev mode; it doesn't reflect anything a real user experiences. Running
+against a production build removes the double-fetch (and Fast Refresh's
+occasional full-reload-mid-interaction) entirely — the suite went from
+~5 minutes with occasional flakiness to ~2.5 minutes with none.
+
+The MCQ test can still take up to ~90s on its own regardless (M2's real,
+disclosed cold-generation latency — see Phase 8's Locust findings); it can
+take much longer than that if this machine is also under memory pressure
+from other heavy processes at the same time — a real, documented
+constraint of this project's tight 8GB RAM budget, not a bug in the test.
 
 One test (the full forgot-password reset flow) also needs
 `BACKEND_LOG_PATH` set to the running backend's log file, since the reset

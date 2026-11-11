@@ -5,15 +5,19 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { apiFetch, ApiError } from "@/lib/api";
-import type { McqResponse, McqSubmitResponse, RagAnswerResponse, TimetableResponse, TodayTopicResponse } from "@/lib/types";
+import type {
+  ExamPreferences,
+  McqResponse,
+  McqSubmitResponse,
+  RagAnswerResponse,
+  TimetableResponse,
+  TodayTopicResponse,
+} from "@/lib/types";
 
-type Subject = { id: string; label: string };
-
-const SUBJECTS: Subject[] = [
-  { id: "mathematics", label: "Mathematics" },
-  { id: "chemistry", label: "Chemistry" },
-  { id: "urdu", label: "Urdu" },
-];
+// Must exactly match Question.subject in the real question bank (not
+// "Urdu", which isn't in it at all — found 2026-11-11 while making subject
+// selection actually affect the timetable/MCQ instead of doing nothing).
+const SUBJECTS = ["Mathematics", "Chemistry", "Physics", "Biology", "English", "Logical Reasoning"];
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
@@ -23,7 +27,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function ExamPrepPage() {
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["mathematics"]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["Mathematics"]);
   const [testDate, setTestDate] = useState("");
   const [studyMode, setStudyMode] = useState("");
 
@@ -43,6 +47,17 @@ export default function ExamPrepPage() {
 
   useEffect(() => {
     loadAll();
+    // Reflect the real saved selection in the UI — previously this always
+    // started from a hardcoded ["Mathematics"] default regardless of what
+    // was actually saved, since /exam/subjects had nowhere real to persist
+    // to or read back from.
+    apiFetch<ExamPreferences>("/exam/subjects")
+      .then((prefs) => {
+        setSelectedSubjects(prefs.subjects);
+        if (prefs.test_date) setTestDate(prefs.test_date);
+        if (prefs.study_mode) setStudyMode(prefs.study_mode);
+      })
+      .catch(() => {});
   }, []);
 
   // Deliberately NOT a single Promise.all gating all three state updates
@@ -76,7 +91,7 @@ export default function ExamPrepPage() {
   }
 
   async function handleAddToPlaylist(video: { title: string; source: string; duration_min: number }) {
-    const primarySubject = SUBJECTS.find((s) => s.id === selectedSubjects[0])?.label ?? "Mathematics";
+    const primarySubject = selectedSubjects[0] ?? "Mathematics";
     try {
       await apiFetch("/learning/playlist", {
         method: "POST",
@@ -186,18 +201,18 @@ export default function ExamPrepPage() {
               </div>
               <div id="subject-selector" role="group" aria-label="Select subjects">
                 {SUBJECTS.map((subject) => {
-                  const isSelected = selectedSubjects.includes(subject.id);
+                  const isSelected = selectedSubjects.includes(subject);
                   return (
                     <button
-                      key={subject.id}
+                      key={subject}
                       type="button"
                       className={`chip${isSelected ? " selected" : ""}`}
-                      data-subject={subject.id}
+                      data-subject={subject}
                       aria-pressed={isSelected}
-                      onClick={() => toggleSubject(subject.id)}
+                      onClick={() => toggleSubject(subject)}
                     >
                       {isSelected ? "✓ " : "+ "}
-                      {subject.label}
+                      {subject}
                     </button>
                   );
                 })}
@@ -353,7 +368,8 @@ export default function ExamPrepPage() {
                 </div>
                 <h4 style={{ margin: "0 0 4px" }}>{video.title}</h4>
                 <p className="small-muted" style={{ margin: "0 0 14px" }}>
-                  {video.source} · {video.duration_min} min · AI-matched
+                  {video.source}
+                  {video.duration_min > 0 ? ` · ${video.duration_min} min` : ""} · AI-matched
                 </p>
                 <button
                   className="btn btn-outline btn-block"

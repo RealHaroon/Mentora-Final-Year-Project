@@ -20,7 +20,7 @@ export default defineConfig({
   // and a cold reload + generation on this project's real target hardware
   // can take up to ~90s on its own (Phase 8's Locust findings) — generous
   // headroom here reflects real, disclosed latency, not a hang.
-  timeout: 270_000,
+  timeout: 330_000, // must cover the exam-prep MCQ test's own 240s + 60s waits, plus headroom
   expect: { timeout: 15_000 },
   reporter: [["list"]],
   globalSetup: "./e2e/global-setup.ts",

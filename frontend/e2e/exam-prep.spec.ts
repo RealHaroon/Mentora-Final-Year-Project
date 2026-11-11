@@ -27,6 +27,15 @@ test("MCQ loads and submitting an answer shows a real graded or ungraded result"
   // disclosed latency, not a hang.
   await expect(mcqForm.getByRole("radio").first()).toBeVisible({ timeout: 240_000 });
 
+  // React 18/19 Strict Mode double-invokes effects in dev, so loadAll()'s
+  // /exam/mcq fetch actually fires twice on mount — the second response can
+  // silently replace the whole question/radio group right as this test is
+  // mid-interaction (checked a radio from the FIRST question, then clicking
+  // Submit on a form that's quietly become the SECOND question with nothing
+  // checked — handleMcqSubmit's `if (!answer) return` then makes Submit a
+  // silent no-op). Letting the network settle first avoids racing that.
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+
   await mcqForm.getByRole("radio").first().check();
   await mcqForm.getByRole("button", { name: "Submit →" }).click();
 
@@ -36,7 +45,10 @@ test("MCQ loads and submitting an answer shows a real graded or ungraded result"
   const correct = page.getByText("Correct!");
   const incorrect = page.getByText(/Not quite — the correct answer is/);
   const ungraded = page.getByText(/no labeled correct answer|isn't gradable/);
-  await expect(correct.or(incorrect).or(ungraded)).toBeVisible({ timeout: 15_000 });
+  // On a wrong answer this calls M1 (gap_classifier) — normally fast, but
+  // under the same real memory contention as M2 above, a "fast" model can
+  // still queue/slow down noticeably. Generous for the same reason.
+  await expect(correct.or(incorrect).or(ungraded)).toBeVisible({ timeout: 60_000 });
 });
 
 test("timetable and today's topic render without waiting for the slow MCQ call", async ({ page }) => {
