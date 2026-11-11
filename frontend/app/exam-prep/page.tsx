@@ -76,7 +76,7 @@ export default function ExamPrepPage() {
     const mcq = apiFetch<McqResponse>("/exam/mcq")
       .then(setMcq)
       .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load the MCQ"));
-    return Promise.allSettled([timetable, topic, mcq]);
+    return { timetable, topic, mcq, all: Promise.allSettled([timetable, topic, mcq]) };
   }
 
   async function handleRegenerate(e: React.MouseEvent) {
@@ -86,7 +86,12 @@ export default function ExamPrepPage() {
     setTimetable(null);
     setTodayTopic(null);
     setMcq(null);
-    await loadAll();
+    // Only wait on the two fast calls for the button's own "Regenerating…"
+    // label — same reasoning as loadAll()'s own comment above: waiting on
+    // mcq too would hold this label hostage behind M2 for up to several
+    // minutes even though the timetable already finished and is visible.
+    const { timetable, topic } = loadAll();
+    await Promise.allSettled([timetable, topic]);
     setRegenerating(false);
   }
 
