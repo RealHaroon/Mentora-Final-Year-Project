@@ -391,11 +391,14 @@ export default function ExamPrepPage() {
             {mcq ? (
               <>
                 <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
-                <p style={{ fontSize: "0.92rem", margin: "0 0 14px" }} data-question-id={mcq.question.question_id}>
+                <p
+                  style={{ fontSize: "0.92rem", margin: "0 0 14px", whiteSpace: "pre-line" }}
+                  data-question-id={mcq.question.question_id}
+                >
                   {mcq.question.text}
                 </p>
                 {mcq.question.options.map((option) => (
-                  <label className="mcq-option" key={option.value}>
+                  <label className="mcq-option" key={option.value} style={{ whiteSpace: "pre-line" }}>
                     <input
                       type="radio"
                       name={`answer_${mcq.question.question_id}`}

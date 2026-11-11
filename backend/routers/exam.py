@@ -218,7 +218,15 @@ async def submit_mcq(
     if not is_correct:
         manager: ModelManager = request.app.state.model_manager
         weak_topics = await manager.infer("gap_classifier", question.question_text)
-        for topic in weak_topics:
+        # 2026-11-11 — found live: M1 can return the same topic string twice
+        # in one call, and `.one_or_none()` below then crashes with
+        # MultipleResultsFound the SECOND time that topic is ever flagged
+        # (the first flag's two inserts both landed, since this loop had no
+        # dedup and nothing enforces uniqueness on (user_id, topic) in the
+        # schema). Deduping here stops new duplicates; `.first()` below
+        # instead of `.one_or_none()` makes this resilient to the ones
+        # that already exist rather than crashing on them forever.
+        for topic in dict.fromkeys(weak_topics):
             # question.subject is used for every flagged topic, not a
             # per-topic lookup — M1's topic labels are already subject-specific
             # (e.g. "Algebra", "General Biology"), so this is a reasonable
@@ -226,7 +234,8 @@ async def submit_mcq(
             row = (
                 db.query(TopicScore)
                 .filter(TopicScore.user_id == user.user_id, TopicScore.topic == topic)
-                .one_or_none()
+                .order_by(TopicScore.topic_score_id)
+                .first()
             )
             if row is None:
                 row = TopicScore(user_id=user.user_id, subject=question.subject, topic=topic, score=50.0)
