@@ -134,10 +134,14 @@ not more hyperparameter tuning. (2) Complete the manual gold-review pass
 on M5's test split before fully trusting its 0.95 F1 number. (3) Try a
 higher-rank LoRA adapter or more epochs for M2, and/or clean the question
 bank's OCR noise, which likely caps generation quality independent of the
-model. (4) Wire the Next.js frontend to this real backend — it currently
-still renders Phase 2's static mock data. (5) A local-model fallback path
-alongside Groq, to restore full offline capability for the RAG chatbot
-specifically, now that its cloud dependency is a known, disclosed tradeoff.
+model. (4) Give `/learning-portal`'s backend data (playlist, materials,
+watch history) a real per-user DB table — found 2026-11-11 while writing
+e2e tests that these are plain module-level Python lists shared across
+every account, not scoped per user at all; harmless for a single-demo-
+account walkthrough, genuinely wrong for more than one real user. (5) A
+local-model fallback path alongside Groq, to restore full offline
+capability for the RAG chatbot specifically, now that its cloud
+dependency is a known, disclosed tradeoff.
 
 **Q: How thorough was the security review — is this production-ready?**
 Explicitly scoped for an FYP, not claimed as production-grade: reviewed

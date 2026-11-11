@@ -16,14 +16,30 @@ behind every number below. This file is the condensed, thesis-ready version.
    checks, Groq-failure graceful-degradation checks. 10 tests.
 
 **Total: 37 backend tests, all passing** (`./scripts/run_all_tests.sh`).
+(This is Phase 8's own count, broken down across the three categories
+above. `pytest --collect-only` currently reports 31 — a pre-existing
+discrepancy from this count, unrelated to the frontend-wiring correction
+below; `./scripts/run_all_tests.sh` is the authoritative current number,
+not this document.)
 
-**Scope note, worth stating directly in the thesis rather than glossing
-over**: end-to-end browser testing (Playwright) and the master plan's
-11-point manual UI checklist were not run, because the Next.js frontend
-has no real API wiring to this backend yet — confirmed by grep, no
-`fetch`/`axios` calls anywhere in `frontend/`. Running either would have
-tested nothing real. This is an explicit, acknowledged scope boundary, not
-an oversight.
+4. **End-to-end browser tests (Playwright)** — added 2026-11-11, against
+   the real running app (both frontend and backend), not mocks. 19 tests
+   across auth (register/login/logout/forgot-password), the dashboard, the
+   exam-prep flow (including an MCQ submission), and the career flow
+   (CV upload, AI suggestion, mock interview). **All 19 passing.**
+
+**Correction (2026-11-11)**: this section originally said Playwright and
+the master plan's 11-point manual UI checklist were skipped because "the
+Next.js frontend has no real API wiring to this backend yet... confirmed
+by grep." That claim was wrong — it was never actually re-verified before
+being written here, the same error that was independently made (and
+independently corrected) in Phases 6, 7, 8 and 9's own docs; see
+`docs/phase10/drift_check.md` for the full root-cause writeup. The
+frontend was wired since Phase 2, just against response shapes Phases 6-7
+later changed without the frontend being revisited. A 2026-11-10 audit
+found and fixed that drift, then added the Playwright suite above. The
+11-point manual checklist is superseded by the automated suite rather
+than run separately.
 
 ## Load testing (Locust, 5 simulated users, 90s)
 

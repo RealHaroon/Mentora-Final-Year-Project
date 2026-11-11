@@ -101,13 +101,16 @@ cd backend && ~/.venvs/mentora-backend/bin/python ../scripts/preflight_check.py
 ## 7. Verify
 
 ```bash
-./scripts/run_all_tests.sh   # 37 backend tests
+./scripts/run_all_tests.sh         # backend tests
+cd frontend && npm run test:e2e    # 19 Playwright tests — needs both servers running first
 ```
 
 ## Known gaps, stated plainly rather than discovered by surprise
 
-- The Next.js frontend (`frontend/`) has no real API wiring to this
-  backend yet — every page renders Phase 2's static mock data.
+- The Next.js frontend (`frontend/`) is wired to this backend and calling
+  real endpoints throughout (since Phase 2) — a line here previously said
+  otherwise; that was wrong. See `docs/phase10/drift_check.md` for the
+  root cause and what it corrected.
 - M1's F1 (0.47) and M2's BLEU-4/ROUGE-L and M3's MAE are all below their
   original targets — each has a specific, documented root cause and
   mitigation discussion in `docs/phase10/model_results_table.md`, not
