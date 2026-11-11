@@ -32,12 +32,15 @@ class RAGUnavailableError(Exception):
 
 
 class RAGPipeline(ABC):
-    def __init__(self, collection, top_k: int = 4):
+    def __init__(self, collection, top_k: int = 4, max_tokens: int = 300):
         self.collection = collection
         self.top_k = top_k
         # max_tokens caps response length — an unbounded reply risks a long,
         # rambling wait (Phase 7 doc §13's num_predict guidance, same idea).
-        self.llm = ChatGroq(model=settings.groq_model, api_key=settings.groq_api_key, max_tokens=300)
+        # Overridable per subclass: InterviewRAG's _CONTINUE_PROMPT asks for
+        # feedback AND a new question in one reply, which routinely needs
+        # more than this default and was getting cut off mid-question.
+        self.llm = ChatGroq(model=settings.groq_model, api_key=settings.groq_api_key, max_tokens=max_tokens)
 
     def retrieve(self, query: str) -> list[str]:
         # Local, CPU-bound (ChromaDB + its small embedding model) — the

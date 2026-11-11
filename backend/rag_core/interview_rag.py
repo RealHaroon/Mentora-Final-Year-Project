@@ -26,7 +26,7 @@ STUDENT'S LATEST ANSWER:
 
 class InterviewRAG(RAGPipeline):
     def __init__(self):
-        super().__init__(collection=interview_kb)
+        super().__init__(collection=interview_kb, max_tokens=500)
 
     async def start(self, career_title: str) -> str:
         chunks = await self.aretrieve(f"interview questions for {career_title}")

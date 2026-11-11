@@ -22,13 +22,8 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 _career_rag = CareerRAG()
 
-_ROADMAP = [
-    {"month_number": "1-2", "milestone_title": "Python & Stats", "description": "Fundamentals", "status": "completed"},
-    {"month_number": 3, "milestone_title": "ML Algorithms", "description": "Scikit-learn", "status": "completed"},
-    {"month_number": 4, "milestone_title": "Deep Learning", "description": "TensorFlow", "status": "in_progress"},
-    {"month_number": 5, "milestone_title": "Projects & RAG", "description": "Portfolio", "status": "pending"},
-    {"month_number": 6, "milestone_title": "Mock Interviews", "description": "Job Applications", "status": "pending"},
-]
+_ROADMAP_PHASES = ["Fundamentals", "Practice", "Applied Project", "Specialization"]
+_ROADMAP_MONTHS = ["1-2", 3, 4, 5]
 
 
 MAX_CV_SIZE_BYTES = 5 * 1024 * 1024  # 5MB — plenty for a text-based resume, caps both abuse and RAM risk
@@ -77,6 +72,15 @@ def _extract_text(filename: str, raw: bytes) -> str:
         return "\n\n".join(p.text for p in doc.paragraphs)
     # .txt and anything else — best-effort decode
     return raw.decode("utf-8", errors="ignore")
+
+
+def _cv_skills_for_user(db: Session, user_id: int) -> set[str]:
+    cv = db.execute(
+        select(CvUpload).where(CvUpload.user_id == user_id).order_by(CvUpload.uploaded_at.desc()).limit(1)
+    ).scalar_one_or_none()
+    if cv is None or not cv.extracted_skills:
+        return set()
+    return {s.lower() for s in cv.extracted_skills}
 
 
 def _skill_text_for_user(db: Session, user_id: int) -> str | None:
@@ -195,4 +199,32 @@ async def get_rankings(request: Request, db: Session = Depends(get_db), user: Us
 def get_roadmap(career_id: int = 1, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     career = db.get(CareerProfile, career_id)
     title = career.title if career else "Data Scientist"
-    return {"career_id": career_id, "title": title, "steps": _ROADMAP}
+
+    # Was a hardcoded 5-step list (Python & Stats -> ... -> TensorFlow) shown
+    # identically for every career, including non-ML roles like Business
+    # Analyst or Product Manager. Build the real per-career equivalent from
+    # CareerProfile.required_skills instead, and mark steps already on the
+    # user's own CV as completed rather than guessing a fixed "month 4" cutoff.
+    cv_skills = _cv_skills_for_user(db, user.user_id)
+    required = (career.required_skills if career else None) or ["Core Skills", "Applied Practice", "Tools", "Portfolio"]
+
+    steps = []
+    gap_marked = False
+    for i, phase in enumerate(_ROADMAP_PHASES):
+        skill = required[i] if i < len(required) else phase
+        if skill.lower() in cv_skills:
+            status = "completed"
+        elif not gap_marked:
+            status, gap_marked = "in_progress", True
+        else:
+            status = "pending"
+        steps.append({"month_number": _ROADMAP_MONTHS[i], "milestone_title": skill, "description": phase, "status": status})
+    # Interview prep always caps the roadmap regardless of career — it's
+    # never "completed" by a CV, only reached once the skill steps are.
+    steps.append({
+        "month_number": 6,
+        "milestone_title": "Mock Interviews",
+        "description": "Job Applications",
+        "status": "completed" if all(s["status"] == "completed" for s in steps) else "pending",
+    })
+    return {"career_id": career_id, "title": title, "steps": steps}

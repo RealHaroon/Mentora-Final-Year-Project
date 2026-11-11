@@ -26,6 +26,9 @@ const CAREER_ID_TO_GOAL: Record<number, string> = {
   4: "software_engineer",
   5: "product_manager",
 };
+const GOAL_TO_CAREER_ID: Record<string, number> = Object.fromEntries(
+  Object.entries(CAREER_ID_TO_GOAL).map(([id, goal]) => [goal, Number(id)]),
+);
 
 export default function CareerPage() {
   const [extracted, setExtracted] = useState<CvUploadResponse | null>(null);
@@ -117,6 +120,14 @@ export default function CareerPage() {
         body: JSON.stringify({ career_goal: value }),
       });
       await refreshRankings();
+      // Same sync as handleViewRoadmap, in the other direction — otherwise
+      // the Mock Interview panel's label (driven by roadmap.title) goes
+      // stale against this dropdown's new value.
+      const careerId = GOAL_TO_CAREER_ID[value];
+      if (careerId) {
+        const data = await apiFetch<RoadmapResponse>(`/career/roadmap?career_id=${careerId}`);
+        setRoadmap(data);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't save career goal");
     }
@@ -128,6 +139,8 @@ export default function CareerPage() {
       const goal = CAREER_ID_TO_GOAL[suggestion.career_id];
       if (goal) setCareerGoal(goal);
       await refreshRankings();
+      const data = await apiFetch<RoadmapResponse>(`/career/roadmap?career_id=${suggestion.career_id}`);
+      setRoadmap(data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't get an AI suggestion");
     }
@@ -137,6 +150,12 @@ export default function CareerPage() {
     try {
       const data = await apiFetch<RoadmapResponse>(`/career/roadmap?career_id=${careerId}`);
       setRoadmap(data);
+      // Keep the Mock Interview panel's target in sync with whichever
+      // roadmap is on screen — it was previously left on whatever the Step 3
+      // dropdown last held, so the panel could say "Business Analyst roles"
+      // while Start Mock Interview silently started a Data Scientist session.
+      const goal = CAREER_ID_TO_GOAL[careerId];
+      if (goal) setCareerGoal(goal);
       document.getElementById("roadmap-section")?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't load that roadmap");
