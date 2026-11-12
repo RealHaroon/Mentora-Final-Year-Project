@@ -176,3 +176,44 @@ class Notification(Base):
     type: Mapped[str] = mapped_column(String(20))
     is_read: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+# Not in the original ERD — added 2026-11-12 to fix the Learning Portal's
+# playlist/materials/watch-history, which were plain module-level Python
+# lists shared across every user of the process (found 2026-11-10 while
+# writing e2e tests against it). See routers/learning.py.
+class PlaylistItem(Base):
+    __tablename__ = "playlist_items"
+
+    item_id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
+    title: Mapped[str] = mapped_column(String(255))
+    subject: Mapped[str] = mapped_column(String(100))
+    source: Mapped[str] = mapped_column(String(150))
+    duration_min: Mapped[int] = mapped_column()
+    note: Mapped[str] = mapped_column(String(255))
+    video_url: Mapped[str] = mapped_column(String(500))
+    added_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class WatchHistoryEntry(Base):
+    __tablename__ = "watch_history"
+
+    watch_id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
+    title: Mapped[str] = mapped_column(String(255))
+    subject: Mapped[str] = mapped_column(String(100))
+    watched_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class Material(Base):
+    __tablename__ = "materials"
+
+    material_id: Mapped[int] = mapped_column(primary_key=True)
+    # NULL = a shared catalog resource visible to every student (e.g. board
+    # past papers); set = a private self-upload visible only to its owner.
+    owner_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.user_id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(255))
+    size_label: Mapped[str] = mapped_column(String(50))
+    source: Mapped[str] = mapped_column(String(150))
+    uploaded_at: Mapped[datetime] = mapped_column(default=utcnow)

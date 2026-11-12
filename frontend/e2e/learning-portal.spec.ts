@@ -1,20 +1,18 @@
 import { test, expect } from "@playwright/test";
 
-// /learning-portal is still entirely Phase 2 mock data (backend/routers/learning.py
-// — confirmed unchanged by Phases 6-7, unlike exam/career). No shape-drift bugs
-// expected here, but it had never been exercised live or in Playwright before
-// 2026-11-10.
-//
-// Real finding from writing this suite: the backend's playlist/materials/
-// watch-history lists are plain module-level Python lists — not just
-// "not persisted to a DB" (as the backend's own comment says) but shared
-// across EVERY user of the process, and de-duplicated only by title. A
-// fixed test title would silently collide with a previous run's leftover
-// entry and surface as a confusing duplicate in the UI (which is exactly
-// what happened — see the 2026-11-10 fix to PlaylistSection.tsx's
-// handleAddVideo for the frontend half of that). Using a title unique to
-// this run sidesteps the shared-state gap entirely rather than trying to
-// clean up perfectly on every path (including a crashed run).
+// /learning-portal's playlist/materials/watch-history were plain module-level
+// Python lists until 2026-11-12 — not just "not persisted to a DB" but shared
+// across EVERY user of the process, and de-duplicated only by title. A fixed
+// test title would silently collide with a previous run's leftover entry and
+// surface as a confusing duplicate in the UI (which is exactly what happened
+// — see the 2026-11-10 fix to PlaylistSection.tsx's handleAddVideo for the
+// frontend half of that). Fixed backend-side 2026-11-12: playlist, watch
+// history, and self-uploaded materials now live in real per-user DB tables
+// (database/models.py's PlaylistItem/WatchHistoryEntry/Material); only the
+// catalogue materials (board past papers etc.) are intentionally shared.
+// Still using a title unique to this run below — real per-user isolation
+// removes the cross-USER collision risk, not collisions between this test's
+// own runs against the same demo account.
 
 function uniqueTitle() {
   return `Playwright test video ${Date.now()}`;

@@ -38,7 +38,14 @@ export default function PlaylistSection({ initialVideos }: { initialVideos: Play
 
   async function handleAddVideo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    // Captured before the first await: the native DOM event's currentTarget
+    // is only valid during synchronous dispatch — by the time an async
+    // handler resumes after awaiting, e.currentTarget is already null, so
+    // calling e.currentTarget.reset() down there throws (even though the
+    // add itself already succeeded), which the catch block below reports as
+    // "Couldn't add that video" — a false failure on a request that worked.
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     setAdding(true);
     setError(null);
     try {
@@ -56,7 +63,7 @@ export default function PlaylistSection({ initialVideos }: { initialVideos: Play
       // unconditionally would show a second, inconsistent copy locally.
       setVideos((prev) => (prev.some((v) => v.title === result.video.title) ? prev : [...prev, result.video]));
       setShowAddForm(false);
-      e.currentTarget.reset();
+      form.reset();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't add that video");
     } finally {

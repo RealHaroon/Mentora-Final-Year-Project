@@ -67,6 +67,7 @@ everything else, no further setup needed.
 cd backend
 ~/.venvs/mentora-backend/bin/python scripts/seed_careers.py
 ~/.venvs/mentora-backend/bin/python scripts/seed_questions.py
+~/.venvs/mentora-backend/bin/python scripts/seed_materials.py
 ```
 
 Optional, for a demo-ready account (Phase 9):

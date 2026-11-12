@@ -16,6 +16,7 @@ Run: cd backend && ~/.venvs/mentora-backend/bin/python scripts/seed_demo_account
 
 import json
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -23,15 +24,45 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from database.models import (
     CvUpload,
     ExamSession,
+    PlaylistItem,
     StudentIntelligenceProfile,
     TopicScore,
     User,
+    WatchHistoryEntry,
     utcnow,
 )
 from database.session import Base, SessionLocal, engine
 from ml_core.models.cv_ner import CVNerExtractor
 from config import settings
+from routers.learning import _youtube_search_url
 from services.auth_service import hash_password
+
+# Same 3 videos the old Phase 2 mock hardcoded for every account — now a
+# real per-user seed instead of shared in-memory state (see routers/learning.py).
+DEMO_PLAYLIST = [
+    {"title": "Quadratic Equations — Full Chapter", "subject": "Mathematics", "source": "MathCity.org", "duration_min": 18, "note": "AI-added from today's session"},
+    {"title": "Grammar Tenses — Active & Passive Voice", "subject": "English", "source": "Khan Academy", "duration_min": 12, "note": "AI-added"},
+    {"title": "Geometry — Circles & Angles Full Revision", "subject": "Mathematics", "source": "MathCity.org", "duration_min": 24, "note": "AI-added"},
+]
+
+# 14 watch-history entries within the last week, matching the old mock's
+# hardcoded "14 watched this week" stat — now a real, computed count.
+DEMO_WATCH_HISTORY = [
+    ("Quadratic Equations — Full Chapter", "Mathematics"),
+    ("Grammar Tenses — Active & Passive Voice", "English"),
+    ("Geometry — Circles & Angles Full Revision", "Mathematics"),
+    ("Algebra Basics — Worked Examples", "Mathematics"),
+    ("Advanced Math — Functions Overview", "Mathematics"),
+    ("Grammar Tenses — Active & Passive Voice", "English"),
+    ("Geometry — Circles & Angles Full Revision", "Mathematics"),
+    ("Quadratic Equations — Full Chapter", "Mathematics"),
+    ("Problem Solving Strategies", "Mathematics"),
+    ("Data Analysis Fundamentals", "Mathematics"),
+    ("Algebra Basics — Worked Examples", "Mathematics"),
+    ("Grammar Tenses — Active & Passive Voice", "English"),
+    ("Advanced Math — Functions Overview", "Mathematics"),
+    ("Geometry — Circles & Angles Full Revision", "Mathematics"),
+]
 
 DEMO_EMAIL = "demo@mentora.pk"
 DEMO_PASSWORD = "MentoraDemo2026!"
@@ -100,6 +131,17 @@ def seed():
 
         for subject, topic, score in TOPIC_SCORES:
             db.add(TopicScore(user_id=user.user_id, subject=subject, topic=topic, score=score))
+
+        for video in DEMO_PLAYLIST:
+            db.add(PlaylistItem(
+                user_id=user.user_id, video_url=_youtube_search_url(video["title"], video["source"]), **video,
+            ))
+
+        for i, (title, subject) in enumerate(DEMO_WATCH_HISTORY):
+            db.add(WatchHistoryEntry(
+                user_id=user.user_id, title=title, subject=subject,
+                watched_at=utcnow() - timedelta(days=i % 6, hours=i),
+            ))
 
         print("Extracting CV skills via the real M5 model...")
         extracted = extract_real_cv_skills()
