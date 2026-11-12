@@ -49,6 +49,20 @@ test("MCQ loads and submitting an answer shows a real graded or ungraded result"
   // under the same real memory contention as M2 above, a "fast" model can
   // still queue/slow down noticeably. Generous for the same reason.
   await expect(correct.or(incorrect).or(ungraded)).toBeVisible({ timeout: 60_000 });
+
+  // Found 2026-11-12: there was no way to progress past the first question
+  // at all — submitting just left the same question on screen forever, with
+  // no "next" affordance, despite the panel's own "X remaining" counter
+  // implying a multi-question session. Fixed by adding real client-side
+  // session progression; this guards against that regression.
+  await expect(page.getByText("Question 1 of 5")).toBeVisible();
+  await mcqForm.getByRole("button", { name: "Next Question →" }).click();
+  await expect(mcqForm.getByRole("radio").first()).toBeVisible({ timeout: 240_000 });
+  await expect(page.getByText("Question 2 of 5")).toBeVisible();
+  // The previous question's graded result must not still be showing against
+  // the new question.
+  await expect(correct.or(incorrect).or(ungraded)).not.toBeVisible();
+  await expect(mcqForm.getByRole("button", { name: "Submit →" })).toBeVisible();
 });
 
 test("timetable and today's topic render without waiting for the slow MCQ call", async ({ page }) => {

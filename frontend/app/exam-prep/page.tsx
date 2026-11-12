@@ -38,6 +38,14 @@ export default function ExamPrepPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  // How many MCQs answered in the current practice session (resets whenever
+  // a fresh session loads — mount, subject change, or Regenerate). The
+  // backend's own total/remaining fields don't track this across calls
+  // (GET /exam/mcq is stateless — "remaining" is always `count - 1`, the
+  // same value on every single call, not a real decrementing count), so the
+  // session's actual progress lives here instead.
+  const [sessionAnswered, setSessionAnswered] = useState(0);
+  const [loadingNextMcq, setLoadingNextMcq] = useState(false);
   const [addedVideos, setAddedVideos] = useState<string[]>([]);
 
   const [topicQuestion, setTopicQuestion] = useState("");
@@ -67,6 +75,8 @@ export default function ExamPrepPage() {
   // and today-topic data hostage behind it. Each fetch now updates its own
   // state independently, as soon as IT resolves.
   function loadAll() {
+    setSessionAnswered(0);
+    setMcqResult(null);
     const timetable = apiFetch<TimetableResponse>("/exam/timetable")
       .then(setTimetable)
       .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load the timetable"));
@@ -171,6 +181,34 @@ export default function ExamPrepPage() {
       setLoadError(err instanceof ApiError ? err.message : "Couldn't submit that answer");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleNextQuestion() {
+    const nextAnswered = sessionAnswered + 1;
+    setSessionAnswered(nextAnswered);
+    if (!mcq || nextAnswered >= mcq.total) return; // session complete — handled by the render below
+    await fetchMcq();
+  }
+
+  async function handleStartNewRound() {
+    setSessionAnswered(0);
+    await fetchMcq();
+  }
+
+  async function fetchMcq() {
+    setLoadingNextMcq(true);
+    setMcqResult(null);
+    setMcq(null);
+    try {
+      // Explicit topic keeps the whole session on the topic it started
+      // with, rather than re-resolving "today's topic" fresh each call.
+      const next = await apiFetch<McqResponse>(`/exam/mcq?topic=${encodeURIComponent(todayTopic?.topic ?? "")}`);
+      setMcq(next);
+    } catch (err) {
+      setLoadError(err instanceof ApiError ? err.message : "Couldn't load the next question");
+    } finally {
+      setLoadingNextMcq(false);
     }
   }
 
@@ -389,51 +427,80 @@ export default function ExamPrepPage() {
 
           <form id="mcq-form" name="mcq-form" className="panel mt-24" onSubmit={handleMcqSubmit}>
             {mcq ? (
-              <>
-                <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
-                <p
-                  style={{ fontSize: "0.92rem", margin: "0 0 14px", whiteSpace: "pre-line" }}
-                  data-question-id={mcq.question.question_id}
-                >
-                  {mcq.question.text}
-                </p>
-                {mcq.question.options.map((option) => (
-                  <label className="mcq-option" key={option.value} style={{ whiteSpace: "pre-line" }}>
-                    <input
-                      type="radio"
-                      name={`answer_${mcq.question.question_id}`}
-                      value={option.value}
-                      required
-                    />{" "}
-                    {option.text}
-                  </label>
-                ))}
-                {mcqResult && (
-                  <div className={mcqResult.correct === null ? "form-neutral" : mcqResult.correct ? "form-success" : "form-error"}>
-                    {mcqResult.correct === null
-                      ? (mcqResult.detail ?? "This question isn't gradable.")
-                      : mcqResult.correct
-                        ? "Correct!"
-                        : `Not quite — the correct answer is ${mcqResult.correct_answer}.`}
-                    {mcqResult.weak_topics_flagged && mcqResult.weak_topics_flagged.length > 0 && (
-                      <>
-                        {" "}
-                        AI flagged: {mcqResult.weak_topics_flagged.join(", ")}.
-                      </>
-                    )}
+              sessionAnswered >= mcq.total ? (
+                <>
+                  <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
+                  <div className="form-success">
+                    Session complete — you answered {mcq.total} question{mcq.total === 1 ? "" : "s"} on this topic.
                   </div>
-                )}
-                <div className="flex-between mt-24">
-                  <button type="submit" className="btn btn-primary" disabled={submitting}>
-                    {submitting ? "Submitting…" : "Submit →"}
+                  <button
+                    type="button"
+                    className="btn btn-primary mt-24"
+                    onClick={handleStartNewRound}
+                    disabled={loadingNextMcq}
+                  >
+                    {loadingNextMcq ? "Loading…" : "Start Another Round →"}
                   </button>
-                  <span className="small-muted">
-                    {mcq.total} MCQs total · {mcq.remaining} remaining · Generated by {mcq.generated_by}
-                  </span>
-                </div>
-              </>
+                </>
+              ) : (
+                <>
+                  <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
+                  <p
+                    style={{ fontSize: "0.92rem", margin: "0 0 14px", whiteSpace: "pre-line" }}
+                    data-question-id={mcq.question.question_id}
+                  >
+                    {mcq.question.text}
+                  </p>
+                  {mcq.question.options.map((option) => (
+                    <label className="mcq-option" key={option.value} style={{ whiteSpace: "pre-line" }}>
+                      <input
+                        type="radio"
+                        name={`answer_${mcq.question.question_id}`}
+                        value={option.value}
+                        required
+                        disabled={!!mcqResult}
+                      />{" "}
+                      {option.text}
+                    </label>
+                  ))}
+                  {mcqResult && (
+                    <div className={mcqResult.correct === null ? "form-neutral" : mcqResult.correct ? "form-success" : "form-error"}>
+                      {mcqResult.correct === null
+                        ? (mcqResult.detail ?? "This question isn't gradable.")
+                        : mcqResult.correct
+                          ? "Correct!"
+                          : `Not quite — the correct answer is ${mcqResult.correct_answer}.`}
+                      {mcqResult.weak_topics_flagged && mcqResult.weak_topics_flagged.length > 0 && (
+                        <>
+                          {" "}
+                          AI flagged: {mcqResult.weak_topics_flagged.join(", ")}.
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex-between mt-24">
+                    {mcqResult ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleNextQuestion}
+                        disabled={loadingNextMcq}
+                      >
+                        {loadingNextMcq ? "Loading…" : "Next Question →"}
+                      </button>
+                    ) : (
+                      <button type="submit" className="btn btn-primary" disabled={submitting}>
+                        {submitting ? "Submitting…" : "Submit →"}
+                      </button>
+                    )}
+                    <span className="small-muted">
+                      Question {sessionAnswered + 1} of {mcq.total} · Generated by {mcq.generated_by}
+                    </span>
+                  </div>
+                </>
+              )
             ) : (
-              <p className="small-muted">Loading MCQ…</p>
+              <p className="small-muted">{loadingNextMcq ? "Loading next question…" : "Loading MCQ…"}</p>
             )}
           </form>
         </div>
