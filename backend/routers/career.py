@@ -195,18 +195,33 @@ async def get_rankings(request: Request, db: Session = Depends(get_db), user: Us
     }
 
 
+def _roadmap_video(skill: str) -> dict:
+    # Same pattern as /exam/today-topic's video suggestion — a genuine
+    # YouTube search for the real skill, not a fabricated specific video.
+    # No real video catalog exists yet; /learning/playlist computes the
+    # actual search URL itself at Add-to-Playlist time, so this only needs
+    # title/source/duration_min, same shape exam-prep already sends it.
+    return {"title": f"{skill} — Overview", "source": "YouTube search", "duration_min": 0}
+
+
 def _roadmap_out(row: Roadmap) -> dict:
-    return {
+    out = {
         "roadmap_id": row.roadmap_id,
         "month_number": row.month_number,
         "milestone_title": row.milestone_title,
         "description": row.description,
         "status": row.status,
+        "explanation": row.explanation,
+        "video": None,
     }
+    # Mock Interviews isn't a learnable skill via video/explanation.
+    if row.milestone_title != "Mock Interviews":
+        out["video"] = _roadmap_video(row.milestone_title)
+    return out
 
 
 @router.get("/roadmap")
-def get_roadmap(career_id: int = 1, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def get_roadmap(career_id: int = 1, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     career = db.get(CareerProfile, career_id)
     title = career.title if career else "Data Scientist"
 
@@ -242,9 +257,21 @@ def get_roadmap(career_id: int = 1, db: Session = Depends(get_db), user: User = 
             status, gap_marked = "in_progress", True
         else:
             status = "pending"
+        # Grounded in rag_pipelines/career_rag/content/ (per-career profiles
+        # + the general roadmap guide) — generated once here at creation
+        # time and persisted, not recomputed on every view, since this is a
+        # real Groq call per milestone. A RAG failure degrades to a plain
+        # phase label instead of failing the whole roadmap.
+        try:
+            explanation = await _career_rag.answer(
+                f"In 2-3 concise, practical sentences, what should someone learn and focus on for "
+                f"{skill} specifically as part of becoming a {title}?"
+            )
+        except RAGUnavailableError:
+            explanation = None
         rows.append(Roadmap(
             user_id=user.user_id, career_id=career_id, month_number=_ROADMAP_MONTHS[i],
-            milestone_title=skill, description=phase, status=status,
+            milestone_title=skill, description=phase, status=status, explanation=explanation,
         ))
     # Interview prep always caps the roadmap regardless of career — it's
     # never "completed" by a CV, only reached once the skill steps are.

@@ -135,6 +135,9 @@ class Roadmap(Base):
     milestone_title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")
+    # RAG-grounded, generated once at creation time (not on every view) and
+    # persisted alongside the rest of the milestone — see routers/career.py.
+    explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class CvUpload(Base):

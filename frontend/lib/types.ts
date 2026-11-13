@@ -151,6 +151,8 @@ export interface RoadmapStep {
   milestone_title: string;
   description: string;
   status: "completed" | "in_progress" | "pending";
+  explanation: string | null;
+  video: { title: string; source: string; duration_min: number } | null;
 }
 
 export interface RoadmapResponse {

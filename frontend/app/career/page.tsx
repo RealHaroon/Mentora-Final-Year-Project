@@ -38,6 +38,7 @@ export default function CareerPage() {
 
   const [rankings, setRankings] = useState<RankingsResponse | null>(null);
   const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
+  const [addedRoadmapVideos, setAddedRoadmapVideos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [interview, setInterview] = useState<InterviewStartResponse | null>(null);
@@ -186,6 +187,28 @@ export default function CareerPage() {
     } catch (err) {
       setRoadmap(previous); // roll back on failure
       setError(err instanceof ApiError ? err.message : "Couldn't update that milestone");
+    }
+  }
+
+  // Career Counseling had no connection to the Learning Portal at all —
+  // Exam Prep's "Today's Topic" video already had an identical Add to
+  // Playlist button, so a student could start closing a skill gap the
+  // roadmap just told them about, same as they already could for an
+  // exam-prep topic.
+  async function handleAddRoadmapVideoToPlaylist(video: { title: string; source: string; duration_min: number }) {
+    try {
+      await apiFetch("/learning/playlist", {
+        method: "POST",
+        body: JSON.stringify({
+          title: video.title,
+          subject: roadmap?.title ?? "Career Development",
+          source: video.source,
+          duration_min: video.duration_min,
+        }),
+      });
+      setAddedRoadmapVideos((prev) => [...prev, video.title]);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't add that video");
     }
   }
 
@@ -490,6 +513,37 @@ export default function CareerPage() {
               </div>
             ))}
           </div>
+
+          {roadmap && roadmap.steps.some((s) => s.video) && (
+            <div style={{ marginBottom: 32 }}>
+              {roadmap.steps
+                .filter((step) => step.video)
+                .map((step) => (
+                  <div key={step.roadmap_id} className="panel" style={{ marginBottom: 14 }}>
+                    <div className="flex-between" style={{ marginBottom: 8, alignItems: "flex-start" }}>
+                      <h4 style={{ margin: 0 }}>
+                        Month {step.month_number} — {step.milestone_title}
+                      </h4>
+                      <span className={`status-pill ${step.status === "completed" ? "status-done" : step.status === "in_progress" ? "status-today" : ""}`}>
+                        {step.status.replace("_", " ")}
+                      </span>
+                    </div>
+                    <p className="small-muted" style={{ margin: "0 0 14px" }}>
+                      {step.explanation ?? "AI explanation is temporarily unavailable for this milestone."}
+                    </p>
+                    {step.video && (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        disabled={addedRoadmapVideos.includes(step.video.title)}
+                        onClick={() => handleAddRoadmapVideoToPlaylist(step.video!)}
+                      >
+                        {addedRoadmapVideos.includes(step.video.title) ? "Added ✓" : `+ Add "${step.video.title}" to Playlist`}
+                      </button>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
 
           <div id="career-qa" className="panel-tint" style={{ marginBottom: 24, scrollMarginTop: 90 }}>
             <h4 style={{ margin: "0 0 4px" }}>Ask a Career Question</h4>
