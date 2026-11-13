@@ -14,6 +14,7 @@ from rag_core.career_rag import CareerRAG
 from rag_core.pipeline import RAGUnavailableError
 from schemas.career import CareerGoalUpdate, RoadmapStatusUpdate
 from services.auth_service import get_current_user
+from services.notification_service import notify_once
 
 router = APIRouter(prefix="/career", tags=["career"])
 
@@ -160,12 +161,32 @@ async def _compute_rankings(request: Request, db: Session, user: User, top_k: in
     if skill_text is None:
         raise HTTPException(status_code=422, detail="Upload a CV first — no extracted skills to match against")
 
+    # Captured before the delete below — the real signal for a "career match
+    # updated" notification (previously one of 4 notifications hardcoded
+    # identically for every account) is comparing the student's actual top
+    # match score before vs. after recomputing, not a fabricated "+2 points".
+    previous_top = (
+        db.query(CareerRanking)
+        .filter(CareerRanking.user_id == user.user_id)
+        .order_by(CareerRanking.match_score.desc())
+        .first()
+    )
+    previous_top_score = previous_top.match_score if previous_top else None
+
     manager: ModelManager = request.app.state.model_manager
     rankings = await manager.infer("career_matcher", skill_text, top_k=top_k)
 
     db.query(CareerRanking).filter(CareerRanking.user_id == user.user_id).delete()
     for r in rankings:
         db.add(CareerRanking(user_id=user.user_id, career_id=r["career_id"], match_score=r["match_score"]))
+
+    new_top_score = rankings[0]["match_score"] if rankings else None
+    if previous_top_score is not None and new_top_score is not None:
+        delta = round(new_top_score - previous_top_score)
+        if delta != 0:
+            sign = "+" if delta > 0 else ""
+            notify_once(db, user.user_id, "match", f"Career match updated: {sign}{delta} points")
+
     db.commit()
     return rankings
 

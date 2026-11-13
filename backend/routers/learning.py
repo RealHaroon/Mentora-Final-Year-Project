@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from database.models import Material, PlaylistItem, User, WatchHistoryEntry, utcnow
 from database.session import get_db
 from services.auth_service import get_current_user
+from services.notification_service import notify_once
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
@@ -113,6 +114,10 @@ def add_to_playlist(payload: PlaylistItemIn, db: Session = Depends(get_db), user
             video_url=_youtube_search_url(payload.title, payload.source),
         )
         db.add(existing)
+        # One of the 4 hardcoded "content_updates" notifications every
+        # account used to see regardless of what they'd actually done — now
+        # fires on the real add, naming the real video.
+        notify_once(db, user.user_id, "ok", f"New video added to your playlist: {payload.title}")
         db.commit()
         db.refresh(existing)
     return {"detail": "Added to playlist", "video": _playlist_out(existing)}

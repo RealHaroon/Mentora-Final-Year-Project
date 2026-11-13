@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import CareerProfile, CareerRanking, ExamSession, Notification, TopicScore, User, utcnow
+from database.models import CareerProfile, CareerRanking, ExamSession, TopicScore, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from services.auth_service import get_current_user
+from services.notification_service import notify_once
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -113,11 +114,10 @@ async def check_at_risk(request: Request, db: Session = Depends(get_db), user: U
     result = await manager.infer("trajectory_predictor", recent_scores)
 
     if result["trend"] == "declining":
-        db.add(Notification(
-            user_id=user.user_id,
-            type="alert",
-            message='Score trend flagged "at risk" — Trajectory Predictor',
-        ))
+        # notify_once, not a plain add() — this check re-runs on every
+        # dashboard visit, and without dedup a still-declining trend would
+        # insert a fresh duplicate row every single time rather than once.
+        notify_once(db, user.user_id, "alert", 'Score trend flagged "at risk" — Trajectory Predictor')
         db.commit()
 
     return {"available": True, **result}

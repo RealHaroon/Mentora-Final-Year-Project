@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-from database.models import User
+from database.models import Notification, User
+from database.session import get_db
 from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -17,16 +19,23 @@ _TYPE_TO_PREF = {
 
 
 @router.get("")
-def get_notifications(unread: bool | None = None, user: User = Depends(get_current_user)):
-    # MOCK — matches the 4 hardcoded notif-items on /dashboard.
-    items = [
-        {"type": "alert", "message": 'Score trend flagged "at risk" in Algebra — Trajectory Predictor', "is_read": False},
-        {"type": "ok", "message": "New topic playlist ready for Algebra", "is_read": False},
-        {"type": "time", "message": "Tomorrow: Grammar session — 7 PM", "is_read": False},
-        {"type": "match", "message": "Career match updated: +2 points", "is_read": True},
-    ]
-    prefs = user.notification_prefs or {}
-    items = [n for n in items if prefs.get(_TYPE_TO_PREF[n["type"]], True)]
+def get_notifications(unread: bool | None = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # Was 4 hardcoded items identical for every account regardless of what
+    # had actually happened to them — found 2026-11-13 while checking why
+    # /dashboard/at-risk-check's own real Notification writes (M3, the
+    # trajectory predictor) never showed up anywhere: this endpoint never
+    # read the table at all. Real write sites now exist for all 4 types —
+    # see dashboard.py (alert), career.py (match), learning.py (ok), and
+    # exam.py's timetable (time).
+    query = db.query(Notification).filter(Notification.user_id == user.user_id)
     if unread:
-        items = [n for n in items if not n["is_read"]]
+        query = query.filter(Notification.is_read.is_(False))
+    rows = query.order_by(Notification.created_at.desc()).all()
+
+    prefs = user.notification_prefs or {}
+    items = [
+        {"type": r.type, "message": r.message, "is_read": r.is_read}
+        for r in rows
+        if prefs.get(_TYPE_TO_PREF.get(r.type, ""), True)
+    ]
     return {"items": items}

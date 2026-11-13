@@ -11,6 +11,7 @@ from rag_core.exam_rag import ExamRAG
 from rag_core.pipeline import RAGUnavailableError
 from schemas.exam import McqSubmit, SubjectsUpdate
 from services.auth_service import get_current_user
+from services.notification_service import notify_once
 
 router = APIRouter(prefix="/exam", tags=["exam"])
 
@@ -101,7 +102,22 @@ def get_timetable(db: Session = Depends(get_db), user: User = Depends(get_curren
             days_to_exam = max(0, (date.fromisoformat(prefs["test_date"]) - date.today()).days)
         except ValueError:
             pass  # malformed date from an old/manual request — fall back to the default above
-    return {"days_to_exam": days_to_exam, "rows": _build_week(db, user, prefs["subjects"])}
+    week = _build_week(db, user, prefs["subjects"])
+
+    # One of the 4 hardcoded "session_reminders" notifications every account
+    # used to see regardless of their real schedule — there's no background
+    # scheduler in this app, so this fires opportunistically whenever the
+    # timetable is actually viewed, naming tomorrow's real topic rather than
+    # a fixed "Grammar session — 7 PM". notify_once's dedup means it only
+    # actually inserts once per distinct (topic, day) pending reminder.
+    today_idx = date.today().weekday()
+    if today_idx < len(_WEEKDAYS) - 1:
+        tomorrow = week[today_idx + 1]
+        if tomorrow["status"] == "pending":
+            notify_once(db, user.user_id, "time", f"Tomorrow: {tomorrow['topic']} session ({tomorrow['subject']})")
+            db.commit()
+
+    return {"days_to_exam": days_to_exam, "rows": week}
 
 
 @router.get("/today-topic")
