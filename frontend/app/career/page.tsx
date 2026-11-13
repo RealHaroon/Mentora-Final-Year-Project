@@ -162,6 +162,33 @@ export default function CareerPage() {
     }
   }
 
+  const NEXT_ROADMAP_STATUS = { pending: "in_progress", in_progress: "completed", completed: "pending" } as const;
+
+  // Milestones now persist real progress (database/models.py's Roadmap
+  // table) instead of being recomputed from the CV and thrown away on every
+  // page load — clicking a step cycles pending -> in progress -> completed
+  // and that choice sticks across visits.
+  async function handleToggleRoadmapStep(roadmapId: number) {
+    if (!roadmap) return;
+    const current = roadmap.steps.find((s) => s.roadmap_id === roadmapId);
+    if (!current) return;
+    const nextStatus = NEXT_ROADMAP_STATUS[current.status];
+    const previous = roadmap;
+    setRoadmap({
+      ...roadmap,
+      steps: roadmap.steps.map((s) => (s.roadmap_id === roadmapId ? { ...s, status: nextStatus } : s)),
+    });
+    try {
+      await apiFetch(`/career/roadmap/${roadmapId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+    } catch (err) {
+      setRoadmap(previous); // roll back on failure
+      setError(err instanceof ApiError ? err.message : "Couldn't update that milestone");
+    }
+  }
+
   async function handleAskCareerQuestion(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!careerQuestion.trim()) return;
@@ -442,11 +469,19 @@ export default function CareerPage() {
           <div className="timeline" style={{ marginBottom: 32 }}>
             {(roadmap?.steps ?? []).map((step) => (
               <div
-                key={step.milestone_title}
+                key={step.roadmap_id}
                 className={`step${step.status === "completed" ? " is-complete" : step.status === "in_progress" ? " is-current" : ""}`}
                 data-status={step.status}
               >
-                <div className="step-circle">{step.month_number}</div>
+                <button
+                  type="button"
+                  className="step-circle"
+                  style={{ cursor: "pointer", padding: 0, font: "inherit", fontWeight: 700 }}
+                  onClick={() => handleToggleRoadmapStep(step.roadmap_id)}
+                  title={`Status: ${step.status.replace("_", " ")} — click to update`}
+                >
+                  {step.month_number}
+                </button>
                 <p>
                   {step.milestone_title}
                   <br />

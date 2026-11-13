@@ -7,12 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import CareerProfile, CareerRanking, CvUpload, User
+from database.models import CareerProfile, CareerRanking, CvUpload, Roadmap, User
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from rag_core.career_rag import CareerRAG
 from rag_core.pipeline import RAGUnavailableError
-from schemas.career import CareerGoalUpdate
+from schemas.career import CareerGoalUpdate, RoadmapStatusUpdate
 from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/career", tags=["career"])
@@ -23,7 +23,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 _career_rag = CareerRAG()
 
 _ROADMAP_PHASES = ["Fundamentals", "Practice", "Applied Project", "Specialization"]
-_ROADMAP_MONTHS = ["1-2", 3, 4, 5]
+_ROADMAP_MONTHS = ["1-2", "3", "4", "5"]
 
 
 MAX_CV_SIZE_BYTES = 5 * 1024 * 1024  # 5MB — plenty for a text-based resume, caps both abuse and RAM risk
@@ -195,20 +195,44 @@ async def get_rankings(request: Request, db: Session = Depends(get_db), user: Us
     }
 
 
+def _roadmap_out(row: Roadmap) -> dict:
+    return {
+        "roadmap_id": row.roadmap_id,
+        "month_number": row.month_number,
+        "milestone_title": row.milestone_title,
+        "description": row.description,
+        "status": row.status,
+    }
+
+
 @router.get("/roadmap")
 def get_roadmap(career_id: int = 1, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     career = db.get(CareerProfile, career_id)
     title = career.title if career else "Data Scientist"
 
-    # Was a hardcoded 5-step list (Python & Stats -> ... -> TensorFlow) shown
-    # identically for every career, including non-ML roles like Business
-    # Analyst or Product Manager. Build the real per-career equivalent from
-    # CareerProfile.required_skills instead, and mark steps already on the
-    # user's own CV as completed rather than guessing a fixed "month 4" cutoff.
+    # Persisted per (user, career) — was computed fresh on every request and
+    # thrown away, so a student had no way to actually track progress across
+    # visits (ROADMAPS existed in the schema from the start but nothing ever
+    # wrote to it). Once created, a roadmap's steps are returned as stored,
+    # respecting whatever the student has marked via PATCH below, rather than
+    # silently recomputing and overwriting their progress on every reload.
+    existing = db.scalars(
+        select(Roadmap)
+        .where(Roadmap.user_id == user.user_id, Roadmap.career_id == career_id)
+        .order_by(Roadmap.roadmap_id)
+    ).all()
+    if existing:
+        return {"career_id": career_id, "title": title, "steps": [_roadmap_out(r) for r in existing]}
+
+    # First time viewing this career's roadmap — build the real per-career
+    # milestones from CareerProfile.required_skills (was a hardcoded 5-step
+    # list shown identically for every career, including non-ML roles like
+    # Business Analyst), mark steps already on the user's CV as completed
+    # rather than guessing a fixed cutoff, and persist the result.
     cv_skills = _cv_skills_for_user(db, user.user_id)
     required = (career.required_skills if career else None) or ["Core Skills", "Applied Practice", "Tools", "Portfolio"]
 
-    steps = []
+    rows: list[Roadmap] = []
     gap_marked = False
     for i, phase in enumerate(_ROADMAP_PHASES):
         skill = required[i] if i < len(required) else phase
@@ -218,13 +242,33 @@ def get_roadmap(career_id: int = 1, db: Session = Depends(get_db), user: User = 
             status, gap_marked = "in_progress", True
         else:
             status = "pending"
-        steps.append({"month_number": _ROADMAP_MONTHS[i], "milestone_title": skill, "description": phase, "status": status})
+        rows.append(Roadmap(
+            user_id=user.user_id, career_id=career_id, month_number=_ROADMAP_MONTHS[i],
+            milestone_title=skill, description=phase, status=status,
+        ))
     # Interview prep always caps the roadmap regardless of career — it's
     # never "completed" by a CV, only reached once the skill steps are.
-    steps.append({
-        "month_number": 6,
-        "milestone_title": "Mock Interviews",
-        "description": "Job Applications",
-        "status": "completed" if all(s["status"] == "completed" for s in steps) else "pending",
-    })
-    return {"career_id": career_id, "title": title, "steps": steps}
+    rows.append(Roadmap(
+        user_id=user.user_id, career_id=career_id, month_number="6",
+        milestone_title="Mock Interviews", description="Job Applications",
+        status="completed" if all(r.status == "completed" for r in rows) else "pending",
+    ))
+    db.add_all(rows)
+    db.commit()
+    for r in rows:
+        db.refresh(r)
+    return {"career_id": career_id, "title": title, "steps": [_roadmap_out(r) for r in rows]}
+
+
+@router.patch("/roadmap/{roadmap_id}")
+def update_roadmap_status(
+    roadmap_id: int, payload: RoadmapStatusUpdate,
+    db: Session = Depends(get_db), user: User = Depends(get_current_user),
+):
+    row = db.get(Roadmap, roadmap_id)
+    if row is None or row.user_id != user.user_id:
+        raise HTTPException(status_code=404, detail="Roadmap milestone not found")
+    row.status = payload.status
+    db.commit()
+    db.refresh(row)
+    return {"detail": "Updated", "step": _roadmap_out(row)}

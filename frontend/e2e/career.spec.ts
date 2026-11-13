@@ -12,6 +12,34 @@ test("career rankings load from the real CV already on file for the demo account
   await expect(page.getByText(/Model: \S+/)).toBeVisible();
 });
 
+test("roadmap milestone status persists across reloads (not recomputed from the CV every time)", async ({ page }) => {
+  // Found 2026-11-13: ROADMAPS existed in the schema from the start but
+  // nothing ever wrote to it — the roadmap was recomputed fresh from the CV
+  // on every request and thrown away, so a student had no way to actually
+  // track progress over time. Business Analyst, not Data Scientist — avoids
+  // colliding with manual roadmap testing done against the default career.
+  await page.goto("/career");
+  await expect(page.getByRole("cell", { name: "Data Scientist" })).toBeVisible({ timeout: 15_000 });
+  // The timeline already shows Data Scientist's roadmap from the page's own
+  // mount fetch — wait for the heading to actually say Business Analyst
+  // before touching any circle, or a click/read can land on the stale
+  // Data-Scientist steps still on screen during the View Roadmap fetch.
+  await page.getByRole("row", { name: /Business Analyst/ }).getByRole("button", { name: "View Roadmap" }).click();
+  await expect(page.getByText("6-Month Skill Roadmap — Business Analyst")).toBeVisible({ timeout: 15_000 });
+
+  const firstCircle = page.locator(".timeline .step-circle").first();
+  const statusBefore = await firstCircle.getAttribute("title");
+  await firstCircle.click();
+  await expect(firstCircle).not.toHaveAttribute("title", statusBefore ?? "", { timeout: 5_000 });
+  const statusAfterClick = await firstCircle.getAttribute("title");
+
+  await page.goto("/career");
+  await page.getByRole("row", { name: /Business Analyst/ }).getByRole("button", { name: "View Roadmap" }).click();
+  await expect(page.getByText("6-Month Skill Roadmap — Business Analyst")).toBeVisible({ timeout: 15_000 });
+  const reloadedCircle = page.locator(".timeline .step-circle").first();
+  await expect(reloadedCircle).toHaveAttribute("title", statusAfterClick ?? "", { timeout: 15_000 });
+});
+
 test("AI Suggest Best Career updates the goal dropdown from a real prediction", async ({ page }) => {
   await page.goto("/career");
 

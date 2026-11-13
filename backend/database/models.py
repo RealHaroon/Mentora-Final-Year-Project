@@ -128,7 +128,10 @@ class Roadmap(Base):
     roadmap_id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
     career_id: Mapped[int] = mapped_column(ForeignKey("career_profiles.career_id"))
-    month_number: Mapped[int] = mapped_column()
+    # String, not int — the first milestone spans two months ("1-2"), same as
+    # the roadmap display always has. Table had zero rows when this was
+    # written (2026-11-13), so no migration/data-loss concern changing it.
+    month_number: Mapped[str] = mapped_column(String(10))
     milestone_title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")

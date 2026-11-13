@@ -146,6 +146,7 @@ export interface RankingsResponse {
 }
 
 export interface RoadmapStep {
+  roadmap_id: number;
   month_number: number | string;
   milestone_title: string;
   description: string;

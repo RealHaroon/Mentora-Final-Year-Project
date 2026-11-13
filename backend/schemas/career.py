@@ -1,6 +1,11 @@
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel
+
+
+class RoadmapStatusUpdate(BaseModel):
+    status: Literal["completed", "in_progress", "pending"]
 
 
 class CareerGoal(str, Enum):
