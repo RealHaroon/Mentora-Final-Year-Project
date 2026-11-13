@@ -1,11 +1,10 @@
 """
 M2 wrapper — FLAN-T5-Large + LoRA (merged, fp16), the heaviest on-demand
 model. Already known weak at training time (BLEU-4/ROUGE-L well under
-target, see docs/phase10/model_results_table.md); infer() retries with
-sampling if the first (deterministic) attempt doesn't produce valid JSON,
-and raises ValueError if none of the attempts do — callers (routers)
-catch that and fall back to the real question bank rather than show a
-broken page.
+target, see docs/phase10/model_results_table.md); infer() raises
+ValueError when its attempt doesn't produce valid JSON, and callers
+(routers) catch that and fall back to the real question bank rather than
+show a broken page.
 """
 
 import json
@@ -33,7 +32,7 @@ class QuestionGenerator(LoadableModel):
         self.model.eval()
         self._loaded = True
 
-    def infer(self, topic: str, difficulty: str = "medium", max_retries: int = 2) -> dict:
+    def infer(self, topic: str, difficulty: str = "medium") -> dict:
         # Match training's exact prompt format (mentora_data/processed/m2/
         # flan_t5_training_data.csv's input_text) — no extra instruction text.
         # Phase 5's parity check already showed this model is weak (12/12
@@ -43,18 +42,21 @@ class QuestionGenerator(LoadableModel):
         prompt = f"Generate a {difficulty} difficulty multiple-choice question about {topic}."
         inputs = self.tokenizer(prompt, return_tensors="pt")
 
-        for attempt in range(max_retries + 1):
-            with torch.no_grad():
-                output_ids = self.model.generate(
-                    **inputs, max_new_tokens=200, do_sample=(attempt > 0), temperature=0.8
-                )
-            text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
-            parsed = self._try_parse(text)
-            if parsed is not None:
-                return parsed
-        # Every attempt failed to produce valid JSON — surface this rather than
-        # silently returning malformed data to the frontend.
-        raise ValueError(f"Question generator failed to produce valid JSON after {max_retries + 1} attempts")
+        # Used to retry up to 2 more times with sampling on a failed attempt.
+        # Removed 2026-11-13 after confirming empirically — across the 12
+        # prompts in the Phase 5 parity check plus a direct test against all
+        # 20 real question-bank topics, 32/32 — that a retry never turns a
+        # failed generation into valid JSON here; it only tripled the latency
+        # (~35-45s) of a call that was always going to fall back anyway.
+        with torch.no_grad():
+            output_ids = self.model.generate(**inputs, max_new_tokens=200)
+        text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        parsed = self._try_parse(text)
+        if parsed is not None:
+            return parsed
+        # Failed to produce valid JSON — surface this rather than silently
+        # returning malformed data to the frontend.
+        raise ValueError("Question generator failed to produce valid JSON")
 
     @staticmethod
     def _try_parse(text: str) -> dict | None:
