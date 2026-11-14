@@ -8,7 +8,7 @@ type SiteHeaderProps = {
   variant: "public" | "app";
 };
 
-type DropdownKey = "exam-prep" | "career" | "dashboard";
+type DropdownKey = "career" | "dashboard";
 
 export default function SiteHeader({ variant }: SiteHeaderProps) {
   const pathname = usePathname();
@@ -61,26 +61,15 @@ export default function SiteHeader({ variant }: SiteHeaderProps) {
             Home
           </Link>
 
-          <div className={`nav-dropdown${isExamPrep ? " active" : ""}${openDropdown === "exam-prep" ? " open" : ""}`}>
-            <button type="button" aria-expanded={openDropdown === "exam-prep"} onClick={() => toggleDropdown("exam-prep")}>
-              Exam Prep ▾
-            </button>
-            <div className="nav-dropdown-panel" onClick={() => setOpenDropdown(null)}>
-              <div className="group-label">University Entry Tests</div>
-              <Link href="/exam-prep" className={isExamPrep ? "current" : undefined}>
-                Sindh University
-              </Link>
-              <Link href="/exam-prep">Mehran University</Link>
-              <Link href="/exam-prep">LUMS</Link>
-              <Link href="/exam-prep">Karachi University</Link>
-              <Link href="/exam-prep">Iqra University</Link>
-              <Link href="/exam-prep">Tando Jam University</Link>
-              <div className="group-label">Job / Competitive Tests</div>
-              <Link href="/exam-prep">PMS / SPSC / PPSC</Link>
-              <Link href="/exam-prep">ISSB</Link>
-              <Link href="/exam-prep">Army / Navy / PAF</Link>
-            </div>
-          </div>
+          {/* Was a dropdown listing all 9 exam_goal names as separate
+              links, every one pointing at this exact same href with no
+              differentiation — found 2026-11-14 while fixing exam_goal
+              itself to actually mean something. The real exam-goal picker
+              now lives in Settings (account state, not a page section);
+              this is just the page link, like Learning Portal below. */}
+          <Link href="/exam-prep" className={isExamPrep ? "active" : undefined}>
+            Exam Prep
+          </Link>
 
           <div className={`nav-dropdown${isCareer ? " active" : ""}${openDropdown === "career" ? " open" : ""}`}>
             <button type="button" aria-expanded={openDropdown === "career"} onClick={() => toggleDropdown("career")}>
