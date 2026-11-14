@@ -91,11 +91,6 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="divider-or">or continue with</div>
-      <button className="btn btn-outline btn-block" disabled>
-        Continue with Google
-      </button>
-
       <p className="auth-legal">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="link-inline">
