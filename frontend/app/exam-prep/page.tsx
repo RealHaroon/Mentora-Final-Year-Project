@@ -12,7 +12,22 @@ import type {
   RagAnswerResponse,
   TimetableResponse,
   TodayTopicResponse,
+  UserOut,
 } from "@/lib/types";
+
+// Matches the option labels in /register and DashboardSettings exactly.
+const GOAL_TITLE: Record<string, string> = {
+  sindh_university: "Sindh University Entry Test Prep",
+  mehran_university: "Mehran University Entry Test Prep",
+  lumhs: "LUMHS (Hyderabad) Entry Test Prep",
+  karachi_university: "Karachi University Entry Test Prep",
+  iqra_university: "Iqra University Entry Test Prep",
+  tando_jam_university: "Tando Jam University Entry Test Prep",
+  mdcat: "MDCAT Prep",
+  pms_spsc_ppsc: "PMS / SPSC / PPSC Prep",
+  issb: "ISSB Prep",
+  army_navy_paf: "Army / Navy / PAF Prep",
+};
 
 // Fallback shown only until /exam/subjects' real allowed_subjects (which
 // depends on exam_goal — e.g. MDCAT excludes Mathematics) loads. Must
@@ -31,6 +46,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function ExamPrepPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["Mathematics"]);
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>(FALLBACK_SUBJECTS);
+  const [examGoal, setExamGoal] = useState<string | null>(null);
   const [testDate, setTestDate] = useState("");
   const [studyMode, setStudyMode] = useState("");
 
@@ -62,6 +78,14 @@ export default function ExamPrepPage() {
     // started from a hardcoded ["Mathematics"] default regardless of what
     // was actually saved, since /exam/subjects had nowhere real to persist
     // to or read back from.
+    // The page title below was hardcoded to "Sindh University Entry Test
+    // Prep" regardless of exam_goal — found 2026-11-14 by a user who
+    // changed their goal to MDCAT/LUMHS in Settings and the title never
+    // changed, even though the subject chips (allowed_subjects above)
+    // actually did.
+    apiFetch<UserOut>("/users/me")
+      .then((user) => setExamGoal(user.exam_goal))
+      .catch(() => {});
     apiFetch<ExamPreferences>("/exam/subjects")
       .then((prefs) => {
         setSelectedSubjects(prefs.subjects);
@@ -223,7 +247,7 @@ export default function ExamPrepPage() {
       <section className="page-heading">
         <div className="container">
           <div>
-            <h1>Sindh University Entry Test Prep</h1>
+            <h1>{(examGoal && GOAL_TITLE[examGoal]) ?? "Sindh University Entry Test Prep"}</h1>
             <p>AI-generated timetable · Auto-updated daily</p>
           </div>
           <Link href="/learning-portal#materials" className="btn btn-primary">

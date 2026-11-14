@@ -42,7 +42,7 @@ def seed(n_students=50, sessions_per_student=15):
             user = User(
                 first_name=fake.first_name(), last_name=fake.last_name(), email=email,
                 password_hash=hash_password("testpass123"), university="University of Sindh, Laar Campus",
-                exam_goal=random.choice(["sindh_university", "mehran_university", "lums"]),
+                exam_goal=random.choice(["sindh_university", "mehran_university", "lumhs"]),
             )
             db.add(user)
             db.flush()

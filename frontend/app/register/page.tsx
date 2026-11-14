@@ -151,7 +151,7 @@ export default function RegisterPage() {
             <optgroup label="University Entry Tests">
               <option value="sindh_university">University Entry Test (Sindh Univ.)</option>
               <option value="mehran_university">Mehran University</option>
-              <option value="lums">LUMS</option>
+              <option value="lumhs">LUMHS (Hyderabad)</option>
               <option value="karachi_university">Karachi University</option>
               <option value="iqra_university">Iqra University</option>
               <option value="tando_jam_university">Tando Jam University</option>

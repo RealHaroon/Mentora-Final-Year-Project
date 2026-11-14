@@ -40,8 +40,16 @@ _ALL_SUBJECTS = ["Mathematics", "Chemistry", "Physics", "Biology", "English", "L
 # "university entry test" goals have no verified per-institution syllabus
 # data (see mentora_data/SOURCES.md) — they keep the full set rather than
 # pretending a differentiation we can't actually back up.
+#
+# 2026-11-14 — "lums" (LUMS, Lahore — business school, unrelated to this
+# app's Sindh/medical focus) renamed to "lumhs" (Liaquat University of
+# Medical & Health Sciences, Hyderabad) per a direct user correction — a
+# real Sindh medical university, admitted via the same provincial MDCAT
+# the question bank is actually sourced from, so it gets MDCAT's exact
+# subject set rather than the generic "university" default.
 _GOAL_SUBJECTS: dict[str, list[str]] = {
     "mdcat": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
+    "lumhs": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
     "pms_spsc_ppsc": ["English", "Logical Reasoning"],
     "issb": ["English", "Logical Reasoning"],
     "army_navy_paf": ["English", "Logical Reasoning"],

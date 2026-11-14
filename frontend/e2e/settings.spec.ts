@@ -49,6 +49,10 @@ test("changing exam goal to MDCAT actually changes which subjects Exam Prep offe
   await expect(page.getByText("Profile updated")).toBeVisible({ timeout: 10_000 });
 
   await page.goto("/exam-prep");
+  // The page heading itself was hardcoded to "Sindh University Entry Test
+  // Prep" regardless of exam_goal, found 2026-11-14 by a user who changed
+  // their goal and saw the subject chips update but the title never did.
+  await expect(page.getByRole("heading", { name: "MDCAT Prep" })).toBeVisible({ timeout: 10_000 });
   const subjectSelector = page.locator("#subject-selector");
   await expect(subjectSelector.getByText("Biology", { exact: false })).toBeVisible({ timeout: 10_000 });
   // MDCAT doesn't test Mathematics — it must not appear as an offered chip.

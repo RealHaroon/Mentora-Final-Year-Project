@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 class ExamGoal(str, Enum):
     sindh_university = "sindh_university"
     mehran_university = "mehran_university"
-    lums = "lums"
+    lumhs = "lumhs"
     karachi_university = "karachi_university"
     iqra_university = "iqra_university"
     tando_jam_university = "tando_jam_university"
