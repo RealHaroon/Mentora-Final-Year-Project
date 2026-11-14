@@ -28,31 +28,97 @@ _WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 _ALL_SUBJECTS = ["Mathematics", "Chemistry", "Physics", "Biology", "English", "Logical Reasoning"]
 
 # 2026-11-14 — found via a user testing their own account: exam_goal was
-# captured at registration and then never read anywhere, so an MDCAT
-# student could be served Mathematics questions despite MDCAT not testing
-# math at all, and every goal looked identical in Exam Prep regardless of
-# what was picked at sign-up. MDCAT's set below matches its real sourced
-# content exactly (no Math); PMS/SPSC/PPSC, ISSB, and Army/Navy/PAF are
-# general-knowledge/aptitude-style selection tests this question bank
-# doesn't have dedicated real content for, so they get the two subjects
-# that are at least genuinely aptitude-relevant (English, Logical
-# Reasoning) rather than irrelevant science/math questions. The six
-# "university entry test" goals have no verified per-institution syllabus
-# data (see mentora_data/SOURCES.md) — they keep the full set rather than
-# pretending a differentiation we can't actually back up.
-#
-# 2026-11-14 — "lums" (LUMS, Lahore — business school, unrelated to this
-# app's Sindh/medical focus) renamed to "lumhs" (Liaquat University of
-# Medical & Health Sciences, Hyderabad) per a direct user correction — a
-# real Sindh medical university, admitted via the same provincial MDCAT
-# the question bank is actually sourced from, so it gets MDCAT's exact
-# subject set rather than the generic "university" default.
+# captured at registration and then never read anywhere, so every goal
+# looked identical in Exam Prep regardless of what was picked at sign-up.
+# First fix only split MDCAT vs. a generic "university" catch-all. The
+# user then correctly pushed back: different universities and competitive
+# exams have genuinely different real syllabi, and "keep the full 6 for
+# every university" wasn't actually true for any of them. Researched each
+# one directly (web search, 2026-11-14) rather than guessing — sources
+# below. Every entry here only uses the 6 subjects this question bank
+# actually has (Mathematics/Chemistry/Physics/Biology/English/Logical
+# Reasoning — see mentora_data/SOURCES.md); where a real syllabus includes
+# something this bank doesn't cover at all (Pakistan Studies, Islamiyat,
+# General Knowledge, Computer Science, Sindhi/Urdu, essay-writing,
+# candidate-chosen electives), that part is simply not representable here
+# — noted per entry, not silently dropped.
 _GOAL_SUBJECTS: dict[str, list[str]] = {
-    "mdcat": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
+    # Sindh University's own SUTC sample paper (sutc.usindh.edu.pk,
+    # Sample_TEST_Paper_OMR_SHEET_PET2025_SUTC.pdf): English 30%, General
+    # Science 20% (physics/chemistry/computer — NOT biology), General
+    # Knowledge 20% (Pakistan Studies/Islamiyat — not in this bank),
+    # Simple Arithmetic 20% (-> Mathematics, the closest available
+    # category), Intelligence 10% (word/shape problems -> Logical
+    # Reasoning). No Biology.
+    "sindh_university": ["Mathematics", "Chemistry", "Physics", "English", "Logical Reasoning"],
+    # MUET's Pre-Engineering pattern (the dominant, consistently-cited one
+    # across eduvision.edu.pk and gotest.com.pk's 2026 guides): 100 MCQs,
+    # 25 each in English/Mathematics/Physics/Chemistry. MUET's own
+    # Pre-Medical pattern (English/Biology/Physics) exists for medical-
+    # track applicants but isn't the default for an engineering
+    # university's own entry test.
+    "mehran_university": ["Mathematics", "Chemistry", "Physics", "English"],
+    # LUMHS (Liaquat University of Medical & Health Sciences, Hyderabad)
+    # admits MBBS/BDS via the real provincial Sindh MDCAT itself (per
+    # brecorder.com's coverage of LUMHS hosting MDCAT 2024-25) — same
+    # subject set as "mdcat" below, not a separate syllabus.
     "lumhs": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
+    # University of Karachi's General Science group: English + General
+    # Knowledge (not in this bank) + 3 of 5 optional science subjects
+    # chosen by the student's own intermediate track (per 2026 sources on
+    # pakera.pk/educationinkarachi.net). The 5 real optionals are Physics/
+    # Chemistry/Biology/Mathematics/Computer — Computer isn't in this
+    # bank; the other 4 are each genuinely part of some student's real
+    # paper, so all 4 are offered here rather than arbitrarily picking 3.
+    "karachi_university": ["Mathematics", "Chemistry", "Physics", "Biology", "English"],
+    # Iqra University's own 2024-25 undergraduate prospectus (not a
+    # third-party guide): English 40%, Mathematics 30%, Analytical 30%.
+    # No compulsory science subject for general undergraduate admission —
+    # Physics only appears conditionally for computing-program applicants
+    # per one source, not as a default.
+    "iqra_university": ["Mathematics", "English", "Logical Reasoning"],
+    # Sindh Agriculture University, Tando Jam: the official 2024-25
+    # admission policy (sau.edu.pk) confirms "four subjects" tested but
+    # not their names in the available excerpt; third-party past-paper
+    # sources agree the content is Mathematics-heavy for engineering
+    # applicants and Biology-heavy for medical/agri-science applicants,
+    # with a confirmed real Physics sample paper (mechanics, heat, light,
+    # electricity, modern physics) and no Chemistry for Computer Science
+    # applicants specifically. Kept inclusive of all 4 sciences + English
+    # for the same "different track, different real paper" reason as
+    # Karachi above, rather than guessing a single track.
+    "tando_jam_university": ["Mathematics", "Chemistry", "Physics", "Biology", "English"],
+    # PMDC's Uniform Curriculum MDCAT (pmdc.pk; identical across provinces
+    # per premeth.com/beambeprep.com's 2026 guides, Sindh included):
+    # Biology 45%, Chemistry 25%, Physics 20%, English 5%, Logical
+    # Reasoning 5%. No Mathematics — confirmed, not assumed.
+    "mdcat": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
+    # PMS/SPSC/PPSC's real compulsory papers (noacss.pk, grand-review.com
+    # 2026 guides) are English Essay/Précis, Current Affairs & Pakistan
+    # Affairs, General Science & Ability, and Islamic Studies — essay-
+    # based, not MCQ — plus candidate-CHOSEN optional subjects (Economics,
+    # Accounting, Computer Science, Political Science, Physics,
+    # Statistics, etc.), not a fixed syllabus. None of this bank's MCQ
+    # science subjects are actually compulsory for this exam; English and
+    # Logical Reasoning are kept as the closest honest approximation of
+    # the compulsory General Science & Ability / English components, not
+    # a claim that this matches the real exam's essay format.
     "pms_spsc_ppsc": ["English", "Logical Reasoning"],
-    "issb": ["English", "Logical Reasoning"],
-    "army_navy_paf": ["English", "Logical Reasoning"],
+    # ISSB's own Initial Test (the academic screening stage before the
+    # main board — conceptuallearningacademy.com, prepareissb.com)
+    # confirmed subjects: English, Mathematics, Pakistan Studies,
+    # Islamiyat (the latter two not in this bank), plus a separate
+    # verbal/non-verbal Intelligence Test (-> Logical Reasoning).
+    "issb": ["English", "Mathematics", "Logical Reasoning"],
+    # Army/Navy/PAF's own Initial Tests (prepareissb.com, mcquniverse.pk)
+    # share the same Academic + Intelligence (verbal/non-verbal) structure
+    # as ISSB above, consistently citing English and Mathematics across
+    # all three branches (Navy's academic test is explicitly English/
+    # Physics/Mathematics; PAF's varies further by trade/branch beyond
+    # what a single subject list can represent). Kept to the subjects
+    # confirmed common across all three rather than guessing a specific
+    # branch's full list.
+    "army_navy_paf": ["English", "Mathematics", "Logical Reasoning"],
 }
 
 
