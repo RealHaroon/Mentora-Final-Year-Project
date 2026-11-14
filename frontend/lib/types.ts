@@ -73,6 +73,10 @@ export interface TimetableResponse {
 
 export interface ExamPreferences {
   subjects: string[];
+  // The real subjects available for this account's exam_goal — e.g. MDCAT
+  // excludes Mathematics (MDCAT doesn't test it). See backend/routers/
+  // exam.py's _GOAL_SUBJECTS.
+  allowed_subjects: string[];
   test_date: string | null;
   study_mode: string | null;
 }

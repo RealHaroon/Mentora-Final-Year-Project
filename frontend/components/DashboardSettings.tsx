@@ -20,12 +20,14 @@ type DashboardSettingsProps = {
   initialFirstName: string;
   initialLastName: string;
   initialUniversity: string;
+  initialExamGoal: string;
 };
 
 export default function DashboardSettings({
   initialFirstName,
   initialLastName,
   initialUniversity,
+  initialExamGoal,
 }: DashboardSettingsProps) {
   const router = useRouter();
   const [panel, setPanel] = useState<Panel>(null);
@@ -77,6 +79,7 @@ export default function DashboardSettings({
           first_name: formData.get("first_name"),
           last_name: formData.get("last_name"),
           university: formData.get("university"),
+          exam_goal: formData.get("exam_goal"),
         }),
       });
       setSuccess("Profile updated");
@@ -177,6 +180,33 @@ export default function DashboardSettings({
           <div className="field">
             <label htmlFor="settings_university">University / Institution</label>
             <input id="settings_university" name="university" defaultValue={initialUniversity} required />
+          </div>
+          <div className="field">
+            <label htmlFor="settings_exam_goal">I am preparing for</label>
+            {/* Matches /register's exact same options — was previously set
+                once at registration with no way to ever change it again. */}
+            <select id="settings_exam_goal" name="exam_goal" defaultValue={initialExamGoal} required>
+              <optgroup label="University Entry Tests">
+                <option value="sindh_university">University Entry Test (Sindh Univ.)</option>
+                <option value="mehran_university">Mehran University</option>
+                <option value="lums">LUMS</option>
+                <option value="karachi_university">Karachi University</option>
+                <option value="iqra_university">Iqra University</option>
+                <option value="tando_jam_university">Tando Jam University</option>
+              </optgroup>
+              <optgroup label="Medical College Entry Tests">
+                <option value="mdcat">MDCAT (Sindh)</option>
+              </optgroup>
+              <optgroup label="Job / Competitive Tests">
+                <option value="pms_spsc_ppsc">PMS / SPSC / PPSC</option>
+                <option value="issb">ISSB</option>
+                <option value="army_navy_paf">Army / Navy / PAF</option>
+              </optgroup>
+            </select>
+            <p className="small-muted" style={{ margin: "6px 0 0" }}>
+              Changes which subjects Exam Prep offers — MDCAT, for example,
+              doesn't test Mathematics.
+            </p>
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Saving…" : "Save changes"}

@@ -254,6 +254,7 @@ export default async function DashboardPage() {
             initialFirstName={user?.first_name ?? ""}
             initialLastName={user?.last_name ?? ""}
             initialUniversity={user?.university ?? ""}
+            initialExamGoal={user?.exam_goal ?? "sindh_university"}
           />
         </div>
       </section>

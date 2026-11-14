@@ -18,7 +18,38 @@ router = APIRouter(prefix="/exam", tags=["exam"])
 _exam_rag = ExamRAG()
 
 _WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-_DEFAULT_SUBJECTS = ["Mathematics"]
+
+# Every subject actually present in the real question bank — see
+# mentora_data/SOURCES.md. Biology/Chemistry/Physics/English/Logical
+# Reasoning are sourced from 23 real Sindh MDCAT past papers (2000-2023);
+# Mathematics is a generic college-readiness dataset used only because
+# MDCAT itself has no math component — not verified against any specific
+# Pakistani university's own syllabus.
+_ALL_SUBJECTS = ["Mathematics", "Chemistry", "Physics", "Biology", "English", "Logical Reasoning"]
+
+# 2026-11-14 — found via a user testing their own account: exam_goal was
+# captured at registration and then never read anywhere, so an MDCAT
+# student could be served Mathematics questions despite MDCAT not testing
+# math at all, and every goal looked identical in Exam Prep regardless of
+# what was picked at sign-up. MDCAT's set below matches its real sourced
+# content exactly (no Math); PMS/SPSC/PPSC, ISSB, and Army/Navy/PAF are
+# general-knowledge/aptitude-style selection tests this question bank
+# doesn't have dedicated real content for, so they get the two subjects
+# that are at least genuinely aptitude-relevant (English, Logical
+# Reasoning) rather than irrelevant science/math questions. The six
+# "university entry test" goals have no verified per-institution syllabus
+# data (see mentora_data/SOURCES.md) — they keep the full set rather than
+# pretending a differentiation we can't actually back up.
+_GOAL_SUBJECTS: dict[str, list[str]] = {
+    "mdcat": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
+    "pms_spsc_ppsc": ["English", "Logical Reasoning"],
+    "issb": ["English", "Logical Reasoning"],
+    "army_navy_paf": ["English", "Logical Reasoning"],
+}
+
+
+def _allowed_subjects(user: User) -> list[str]:
+    return _GOAL_SUBJECTS.get(user.exam_goal, _ALL_SUBJECTS)
 
 
 def _get_or_create_sip(db: Session, user: User) -> StudentIntelligenceProfile:
@@ -37,8 +68,15 @@ def _get_prefs(db: Session, user: User) -> dict:
     # adding three new columns for what's still a small, evolving feature.
     sip = _get_or_create_sip(db, user)
     prefs = sip.priority_queue or {}
-    if not prefs.get("subjects"):
-        prefs["subjects"] = _DEFAULT_SUBJECTS
+    allowed = _allowed_subjects(user)
+    # Re-filter against the CURRENT exam_goal, not just whatever was saved
+    # last — changing exam_goal in Settings (e.g. to MDCAT, which doesn't
+    # test Math) shouldn't leave a stale, now-disallowed subject showing in
+    # the timetable/MCQ until the student happens to touch the selector.
+    valid_saved = [s for s in prefs.get("subjects", []) if s in allowed]
+    if not valid_saved:
+        valid_saved = allowed[:1]
+    prefs["subjects"] = valid_saved
     return prefs
 
 
@@ -76,6 +114,7 @@ def get_subjects(db: Session = Depends(get_db), user: User = Depends(get_current
     prefs = _get_prefs(db, user)
     return {
         "subjects": prefs["subjects"],
+        "allowed_subjects": _allowed_subjects(user),
         "test_date": prefs.get("test_date"),
         "study_mode": prefs.get("study_mode"),
     }
@@ -83,9 +122,17 @@ def get_subjects(db: Session = Depends(get_db), user: User = Depends(get_current
 
 @router.patch("/subjects")
 def update_subjects(payload: SubjectsUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    allowed = _allowed_subjects(user)
+    subjects = payload.subjects or allowed[:1]
+    invalid = [s for s in subjects if s not in allowed]
+    if invalid:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{', '.join(invalid)} not offered for this exam goal — choose from {', '.join(allowed)}",
+        )
     sip = _get_or_create_sip(db, user)
     sip.priority_queue = {
-        "subjects": payload.subjects or _DEFAULT_SUBJECTS,
+        "subjects": subjects,
         "test_date": payload.test_date,
         "study_mode": payload.study_mode.value if payload.study_mode else None,
     }

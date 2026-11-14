@@ -14,10 +14,12 @@ import type {
   TodayTopicResponse,
 } from "@/lib/types";
 
-// Must exactly match Question.subject in the real question bank (not
-// "Urdu", which isn't in it at all — found 2026-11-11 while making subject
+// Fallback shown only until /exam/subjects' real allowed_subjects (which
+// depends on exam_goal — e.g. MDCAT excludes Mathematics) loads. Must
+// exactly match Question.subject in the real question bank (not "Urdu",
+// which isn't in it at all — found 2026-11-11 while making subject
 // selection actually affect the timetable/MCQ instead of doing nothing).
-const SUBJECTS = ["Mathematics", "Chemistry", "Physics", "Biology", "English", "Logical Reasoning"];
+const FALLBACK_SUBJECTS = ["Mathematics", "Chemistry", "Physics", "Biology", "English", "Logical Reasoning"];
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
@@ -28,6 +30,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function ExamPrepPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["Mathematics"]);
+  const [allowedSubjects, setAllowedSubjects] = useState<string[]>(FALLBACK_SUBJECTS);
   const [testDate, setTestDate] = useState("");
   const [studyMode, setStudyMode] = useState("");
 
@@ -62,6 +65,7 @@ export default function ExamPrepPage() {
     apiFetch<ExamPreferences>("/exam/subjects")
       .then((prefs) => {
         setSelectedSubjects(prefs.subjects);
+        setAllowedSubjects(prefs.allowed_subjects);
         if (prefs.test_date) setTestDate(prefs.test_date);
         if (prefs.study_mode) setStudyMode(prefs.study_mode);
       })
@@ -243,7 +247,7 @@ export default function ExamPrepPage() {
                 Select subjects & test date
               </div>
               <div id="subject-selector" role="group" aria-label="Select subjects">
-                {SUBJECTS.map((subject) => {
+                {allowedSubjects.map((subject) => {
                   const isSelected = selectedSubjects.includes(subject);
                   return (
                     <button

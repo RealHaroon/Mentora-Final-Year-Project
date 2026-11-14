@@ -31,6 +31,36 @@ test("notification preferences load real values and persist after save+reload", 
   await expect(page.getByText("Notification preferences saved")).toBeVisible();
 });
 
+test("changing exam goal to MDCAT actually changes which subjects Exam Prep offers", async ({ page }) => {
+  // Found 2026-11-14: exam_goal was captured at registration and then never
+  // read anywhere — every goal saw the identical subject list regardless,
+  // and there was no UI to even change it after signing up. Restores the
+  // original goal at the end — this is the shared demo account, and other
+  // tests/manual testing assume it's "sindh_university".
+  await page.goto("/dashboard#settings");
+  await page.getByRole("button", { name: "👤 Account" }).click();
+
+  const goalField = page.getByLabel("I am preparing for");
+  await expect(goalField).toBeVisible({ timeout: 10_000 });
+  const originalGoal = await goalField.inputValue();
+
+  await goalField.selectOption("mdcat");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Profile updated")).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/exam-prep");
+  const subjectSelector = page.locator("#subject-selector");
+  await expect(subjectSelector.getByText("Biology", { exact: false })).toBeVisible({ timeout: 10_000 });
+  // MDCAT doesn't test Mathematics — it must not appear as an offered chip.
+  await expect(subjectSelector.getByText("Mathematics", { exact: false })).toHaveCount(0);
+
+  await page.goto("/dashboard#settings");
+  await page.getByRole("button", { name: "👤 Account" }).click();
+  await page.getByLabel("I am preparing for").selectOption(originalGoal);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Profile updated")).toBeVisible({ timeout: 10_000 });
+});
+
 test("profile edit saves and the server-rendered header refreshes with the new value", async ({ page }) => {
   await page.goto("/dashboard#settings");
   await page.getByRole("button", { name: "👤 Account" }).click();
