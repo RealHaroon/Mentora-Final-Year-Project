@@ -25,6 +25,11 @@ const CAREER_ID_TO_GOAL: Record<number, string> = {
   3: "business_analyst",
   4: "software_engineer",
   5: "product_manager",
+  6: "ux_ui_designer",
+  7: "devops_engineer",
+  8: "cybersecurity_analyst",
+  9: "digital_marketing_specialist",
+  10: "financial_analyst",
 };
 const GOAL_TO_CAREER_ID: Record<string, number> = Object.fromEntries(
   Object.entries(CAREER_ID_TO_GOAL).map(([id, goal]) => [goal, Number(id)]),
@@ -430,6 +435,11 @@ export default function CareerPage() {
                     <option value="business_analyst">Business Analyst</option>
                     <option value="software_engineer">Software Engineer</option>
                     <option value="product_manager">Product Manager</option>
+                    <option value="ux_ui_designer">UX/UI Designer</option>
+                    <option value="devops_engineer">DevOps Engineer</option>
+                    <option value="cybersecurity_analyst">Cybersecurity Analyst</option>
+                    <option value="digital_marketing_specialist">Digital Marketing Specialist</option>
+                    <option value="financial_analyst">Financial Analyst</option>
                   </select>
                 </div>
               </form>

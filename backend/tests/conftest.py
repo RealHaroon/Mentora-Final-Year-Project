@@ -88,12 +88,23 @@ def _seed_minimal_data(session):
     # re-built per test; this seed only needs to satisfy routes' own
     # Question/CareerProfile lookups (e.g. /career/rankings' key_skill_gap),
     # which DO go through the per-test overridden session.
+    # career_id 6-10 added 2026-11-14 alongside scripts/seed_careers.py's
+    # same 5 new rows — the production catalogue this test's CareerMatcher
+    # instance ranks against now includes them, so this test DB's own
+    # CareerProfile lookups (e.g. the dict build in /career/rankings) need
+    # a matching row for whichever career_id the matcher actually returns,
+    # or that lookup KeyErrors.
     careers = [
         CareerProfile(career_id=1, title="Data Scientist", required_skills=["Python", "Statistics", "Machine Learning"], category="Technology"),
         CareerProfile(career_id=2, title="ML Engineer", required_skills=["Python", "TensorFlow", "MLOps"], category="Technology"),
         CareerProfile(career_id=3, title="Business Analyst", required_skills=["SQL", "Tableau", "Excel"], category="Business"),
         CareerProfile(career_id=4, title="Software Engineer", required_skills=["Python", "System Design", "APIs"], category="Technology"),
         CareerProfile(career_id=5, title="Product Manager", required_skills=["Leadership", "Strategy", "UX"], category="Business"),
+        CareerProfile(career_id=6, title="UX/UI Designer", required_skills=["Figma", "User Research", "Wireframing"], category="Design"),
+        CareerProfile(career_id=7, title="DevOps Engineer", required_skills=["Linux", "Docker", "Kubernetes"], category="Technology"),
+        CareerProfile(career_id=8, title="Cybersecurity Analyst", required_skills=["Networking", "SIEM Tools", "Security Fundamentals"], category="Technology"),
+        CareerProfile(career_id=9, title="Digital Marketing Specialist", required_skills=["SEO", "Content Strategy", "Google Analytics"], category="Business"),
+        CareerProfile(career_id=10, title="Financial Analyst", required_skills=["Excel", "Financial Modeling", "Valuation"], category="Business"),
     ]
     session.add_all(careers)
 

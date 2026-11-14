@@ -19,6 +19,11 @@ _CAREER_GOAL_IDS = {
     CareerGoal.business_analyst: 3,
     CareerGoal.software_engineer: 4,
     CareerGoal.product_manager: 5,
+    CareerGoal.ux_ui_designer: 6,
+    CareerGoal.devops_engineer: 7,
+    CareerGoal.cybersecurity_analyst: 8,
+    CareerGoal.digital_marketing_specialist: 9,
+    CareerGoal.financial_analyst: 10,
 }
 
 _interview_rag = InterviewRAG()

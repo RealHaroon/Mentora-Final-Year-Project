@@ -5,6 +5,17 @@ phase; this fills it with the same 5 careers the Phase 2 mock used in
 routers/career.py, so the real model's output stays comparable to what the
 frontend already expects.
 
+2026-11-14 — added 5 more (ids 6-10) after a user noted there were only
+5-6 careers to pick from. Each new one has a matching RAG content file in
+rag_pipelines/career_rag/content/ (re-run that directory's ingest.py after
+adding here) and a CareerGoal enum entry (schemas/career.py +
+routers/interview.py's _CAREER_GOAL_IDS + the frontend's
+CAREER_ID_TO_GOAL/dropdown in app/career/page.tsx) so they're reachable
+from the roadmap-view and mock-interview dropdown, not just the ranking
+list. required_skills drives the auto-generated roadmap (see
+routers/career.py's get_roadmap) — there's no separate roadmap table to
+hand-author.
+
 Run: cd backend && ~/.venvs/mentora-backend/bin/python scripts/seed_careers.py
 """
 
@@ -50,6 +61,41 @@ CAREERS = [
         "title": "Product Manager",
         "description": "Defines product strategy and leads cross-functional teams to ship features.",
         "required_skills": ["Leadership", "Strategy", "UX", "Communication", "Roadmapping"],
+        "category": "Business",
+    },
+    {
+        "career_id": 6,
+        "title": "UX/UI Designer",
+        "description": "Researches user needs and designs usable, visually consistent product interfaces.",
+        "required_skills": ["Figma", "User Research", "Wireframing", "Prototyping", "Design Systems", "Communication"],
+        "category": "Design",
+    },
+    {
+        "career_id": 7,
+        "title": "DevOps Engineer",
+        "description": "Builds and maintains the deployment pipelines and infrastructure other engineers ship on.",
+        "required_skills": ["Linux", "Docker", "Kubernetes", "CI/CD", "Cloud (AWS/Azure)", "Scripting"],
+        "category": "Technology",
+    },
+    {
+        "career_id": 8,
+        "title": "Cybersecurity Analyst",
+        "description": "Monitors systems and networks for threats and helps close security gaps before they're exploited.",
+        "required_skills": ["Networking", "Linux", "SIEM Tools", "Threat Analysis", "Penetration Testing", "Security Fundamentals"],
+        "category": "Technology",
+    },
+    {
+        "career_id": 9,
+        "title": "Digital Marketing Specialist",
+        "description": "Plans and runs online campaigns and measures what actually drives real results.",
+        "required_skills": ["SEO", "Content Strategy", "Google Analytics", "Social Media Marketing", "Copywriting", "A/B Testing"],
+        "category": "Business",
+    },
+    {
+        "career_id": 10,
+        "title": "Financial Analyst",
+        "description": "Evaluates financial data and forecasts to support budgeting and investment decisions.",
+        "required_skills": ["Excel", "Financial Modeling", "Accounting Fundamentals", "Valuation", "Data Analysis", "Communication"],
         "category": "Business",
     },
 ]
