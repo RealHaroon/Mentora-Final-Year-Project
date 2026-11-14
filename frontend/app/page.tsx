@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Found 2026-11-14: this always rendered variant="public" (Login/Sign Up
+  // buttons) regardless of whether a real session existed — the only page
+  // in the app that never checked auth state at all. Same cookie-presence
+  // check proxy.ts and dashboard/page.tsx already use.
+  const session = (await cookies()).get("mentora_session")?.value;
   return (
     <>
-      <SiteHeader variant="public" />
+      <SiteHeader variant={session ? "app" : "public"} />
 
       <section className="hero">
         <div className="container">

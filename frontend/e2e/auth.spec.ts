@@ -41,3 +41,29 @@ test("register creates a real account, logs in, logs out, and logs back in", asy
   await expect(page).toHaveURL(/\/dashboard/);
   await expect(page.getByRole("heading", { name: "Playwright Tester" })).toBeVisible();
 });
+
+test("home page reflects real login state instead of always showing Login/Sign Up", async ({ page }) => {
+  // Found 2026-11-14: app/page.tsx hardcoded variant="public" unconditionally
+  // — the only page in the app that never checked the session cookie at
+  // all, so a genuinely logged-in user still saw Login/Sign Up on "/".
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Login", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign Up →" })).toBeVisible();
+
+  const email = uniqueTestEmail();
+  await page.goto("/register");
+  await page.getByLabel("First Name").fill("Home");
+  await page.getByLabel("Last Name").fill("Checker");
+  await page.getByLabel("Email Address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill("testpass123");
+  await page.getByLabel("Confirm Password").fill("testpass123");
+  await page.getByLabel("University / Institution").fill("University of Sindh, Laar Campus");
+  await page.getByLabel("I am preparing for").selectOption("sindh_university");
+  await page.getByRole("button", { name: "Create Account →" }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "My Profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Login", exact: true })).not.toBeVisible();
+});
