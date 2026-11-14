@@ -12,7 +12,7 @@ export default function AuthShell({ sideHeading, sideCopy, sideChecklist, childr
   return (
     <div className="auth-shell">
       <aside className="auth-side">
-        <div className="brand">MENTORA</div>
+        <Link href="/" className="brand">MENTORA</Link>
         <div className="side-nav">
           <Link href="/">Home</Link>
           <Link href="/exam-prep">Exam Prep</Link>
@@ -31,11 +31,6 @@ export default function AuthShell({ sideHeading, sideCopy, sideChecklist, childr
       </aside>
 
       <main className="auth-main">
-        {/* .auth-side (the only home link, above) is display:none under
-            960px — found 2026-11-14: below that width there was no way
-            back to "/" from login/register at all. Hidden on wider
-            screens via CSS since .auth-side already covers it there. */}
-        <Link href="/" className="auth-mobile-home">← MENTORA</Link>
         <div className="auth-form-wrap">{children}</div>
       </main>
     </div>
