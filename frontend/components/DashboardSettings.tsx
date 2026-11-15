@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, ApiError } from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
-import type { NotificationPrefs } from "@/lib/types";
+import type { NotificationPrefs, TopicVideoEntry } from "@/lib/types";
 
-type Panel = null | "profile" | "password" | "notifications";
+type Panel = null | "profile" | "password" | "notifications" | "videos";
 
 const DEFAULT_PREFS: NotificationPrefs = {
   weak_topic_alerts: true,
@@ -35,6 +35,9 @@ export default function DashboardSettings({
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
+  const [topicVideos, setTopicVideos] = useState<TopicVideoEntry[] | null>(null);
+  const [videoDrafts, setVideoDrafts] = useState<Record<string, { video_url: string; title: string }>>({});
+  const [videoSaving, setVideoSaving] = useState<string | null>(null);
 
   function togglePanel(next: Panel) {
     setError(null);
@@ -44,6 +47,54 @@ export default function DashboardSettings({
       apiFetch<NotificationPrefs>("/users/me/notification-prefs")
         .then(setPrefs)
         .catch(() => setPrefs(DEFAULT_PREFS));
+    }
+    if (next === "videos" && topicVideos === null) {
+      apiFetch<{ topics: TopicVideoEntry[] }>("/exam/topic-videos")
+        .then((data) => {
+          setTopicVideos(data.topics);
+          setVideoDrafts(
+            Object.fromEntries(
+              data.topics.map((t) => [t.topic, { video_url: t.video_url ?? "", title: t.title ?? "" }])
+            )
+          );
+        })
+        .catch(() => setError("Couldn't load topic videos"));
+    }
+  }
+
+  async function handleSaveTopicVideo(topic: string) {
+    const draft = videoDrafts[topic];
+    if (!draft?.video_url.trim()) return;
+    setVideoSaving(topic);
+    setError(null);
+    try {
+      await apiFetch(`/exam/topic-videos/${encodeURIComponent(topic)}`, {
+        method: "PUT",
+        body: JSON.stringify({ video_url: draft.video_url.trim(), title: draft.title.trim() || `${topic} — Overview` }),
+      });
+      setTopicVideos((prev) =>
+        (prev ?? []).map((t) => (t.topic === topic ? { ...t, video_url: draft.video_url.trim(), title: draft.title.trim() } : t))
+      );
+      setSuccess(`Video saved for ${topic}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save that video");
+    } finally {
+      setVideoSaving(null);
+    }
+  }
+
+  async function handleRemoveTopicVideo(topic: string) {
+    setVideoSaving(topic);
+    setError(null);
+    try {
+      await apiFetch(`/exam/topic-videos/${encodeURIComponent(topic)}`, { method: "DELETE" });
+      setTopicVideos((prev) => (prev ?? []).map((t) => (t.topic === topic ? { ...t, video_url: null, title: null } : t)));
+      setVideoDrafts((prev) => ({ ...prev, [topic]: { video_url: "", title: "" } }));
+      setSuccess(`Reverted ${topic} to the default search link`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't remove that video");
+    } finally {
+      setVideoSaving(null);
     }
   }
 
@@ -154,6 +205,9 @@ export default function DashboardSettings({
         </Link>
         <button className="btn btn-outline btn-sm" onClick={() => togglePanel("password")}>
           🔒 Change Password
+        </button>
+        <button className="btn btn-outline btn-sm" onClick={() => togglePanel("videos")}>
+          🎥 Manage Topic Videos
         </button>
         <button
           className="btn btn-sm"
@@ -278,6 +332,65 @@ export default function DashboardSettings({
             {loading ? "Saving…" : "Change password"}
           </button>
         </form>
+      )}
+
+      {panel === "videos" && (
+        <div className="panel mt-24">
+          <p className="small-muted" style={{ margin: "0 0 14px" }}>
+            Exam Prep suggests a generic YouTube search for a topic until you add a real video here —
+            then every student sees your curated one instead, for that topic.
+          </p>
+          {topicVideos === null ? (
+            <p className="small-muted">Loading…</p>
+          ) : (
+            topicVideos.map((t) => {
+              const draft = videoDrafts[t.topic] ?? { video_url: "", title: "" };
+              return (
+                <div key={t.topic} className="field-row" style={{ alignItems: "flex-end", marginBottom: 14 }}>
+                  <div className="field" style={{ flex: "0 0 160px" }}>
+                    <label>{t.topic}</label>
+                    <input
+                      placeholder="Video title"
+                      value={draft.title}
+                      onChange={(e) =>
+                        setVideoDrafts((prev) => ({ ...prev, [t.topic]: { ...draft, title: e.target.value } }))
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Video URL</label>
+                    <input
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={draft.video_url}
+                      onChange={(e) =>
+                        setVideoDrafts((prev) => ({ ...prev, [t.topic]: { ...draft, video_url: e.target.value } }))
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    disabled={videoSaving === t.topic || !draft.video_url.trim()}
+                    onClick={() => handleSaveTopicVideo(t.topic)}
+                  >
+                    Save
+                  </button>
+                  {t.video_url && (
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      style={{ background: "var(--red-100)", color: "var(--red-600)" }}
+                      disabled={videoSaving === t.topic}
+                      onClick={() => handleRemoveTopicVideo(t.topic)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       )}
     </div>
   );

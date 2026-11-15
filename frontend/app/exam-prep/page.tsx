@@ -133,7 +133,7 @@ export default function ExamPrepPage() {
     setRegenerating(false);
   }
 
-  async function handleAddToPlaylist(video: { title: string; source: string; duration_min: number }) {
+  async function handleAddToPlaylist(video: { title: string; source: string; duration_min: number; video_url: string }) {
     const primarySubject = selectedSubjects[0] ?? "Mathematics";
     try {
       await apiFetch("/learning/playlist", {
@@ -143,6 +143,7 @@ export default function ExamPrepPage() {
           subject: primarySubject,
           source: video.source,
           duration_min: video.duration_min,
+          video_url: video.video_url,
         }),
       });
       setAddedVideos((prev) => [...prev, video.title]);
@@ -440,8 +441,18 @@ export default function ExamPrepPage() {
                 <h4 style={{ margin: "0 0 4px" }}>{video.title}</h4>
                 <p className="small-muted" style={{ margin: "0 0 14px" }}>
                   {video.source}
-                  {video.duration_min > 0 ? ` · ${video.duration_min} min` : ""} · AI-matched
+                  {video.duration_min > 0 ? ` · ${video.duration_min} min` : ""}
+                  {video.source === "Curated" ? "" : " · AI-matched"}
                 </p>
+                <a
+                  href={video.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-block"
+                  style={{ marginBottom: 8 }}
+                >
+                  ▶ Watch
+                </a>
                 <button
                   className="btn btn-outline btn-block"
                   disabled={addedVideos.includes(video.title)}

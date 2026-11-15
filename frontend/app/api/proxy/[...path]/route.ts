@@ -51,6 +51,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ path: s
   const params = await props.params;
   return forward(req, params.path);
 }
+export async function PUT(req: NextRequest, props: { params: Promise<{ path: string[] }> }) {
+  // Added 2026-11-15 — Next.js Route Handlers 405 any HTTP method with no
+  // matching export, and PUT had none here. Invisible until now because
+  // every proxied endpoint so far only ever used GET/POST/PATCH/DELETE —
+  // found via the new PUT /exam/topic-videos/{topic} endpoint working
+  // fine over curl (straight to the backend) but failing through the
+  // browser (through this proxy) with a 405.
+  const params = await props.params;
+  return forward(req, params.path);
+}
 export async function DELETE(req: NextRequest, props: { params: Promise<{ path: string[] }> }) {
   const params = await props.params;
   return forward(req, params.path);

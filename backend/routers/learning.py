@@ -44,6 +44,12 @@ class PlaylistItemIn(BaseModel):
     subject: str
     source: str
     duration_min: int
+    # Optional — Exam Prep/Career now resolve a real video_url themselves
+    # (a curated TopicVideo if one exists, else a real YouTube search link;
+    # see routers/exam.py's _resolve_video) and pass it straight through
+    # so this doesn't recompute a possibly-different URL. Still falls back
+    # to computing one here for any older caller that doesn't send it.
+    video_url: str | None = None
 
 
 class WatchEventIn(BaseModel):
@@ -116,7 +122,7 @@ def add_to_playlist(payload: PlaylistItemIn, db: Session = Depends(get_db), user
             source=payload.source,
             duration_min=payload.duration_min,
             note="Added manually",
-            video_url=_youtube_search_url(payload.title),
+            video_url=payload.video_url or _youtube_search_url(payload.title),
         )
         db.add(existing)
         # One of the 4 hardcoded "content_updates" notifications every

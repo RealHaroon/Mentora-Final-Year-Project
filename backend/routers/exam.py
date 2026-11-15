@@ -1,11 +1,13 @@
 import random
 import re
 from datetime import date, timedelta
+from urllib.parse import quote_plus
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from database.models import ExamSession, Question, StudentIntelligenceProfile, TopicScore, User, utcnow
+from database.models import ExamSession, Question, StudentIntelligenceProfile, TopicScore, TopicVideo, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from rag_core.exam_rag import ExamRAG
@@ -162,12 +164,49 @@ def _topic_for(db: Session, subject: str, seed: str) -> str:
     return random.Random(seed).choice(sorted(topics))
 
 
-def _build_week(db: Session, user: User, subjects: list[str]) -> list[dict]:
-    today_idx = date.today().weekday()  # 0=Mon .. 6=Sun
+def _days_to_exam(prefs: dict) -> int:
+    if prefs.get("test_date"):
+        try:
+            return max(0, (date.fromisoformat(prefs["test_date"]) - date.today()).days)
+        except ValueError:
+            pass  # malformed date from an old/manual request — fall back to the default below
+    return 47  # no real deadline known — same arbitrary placeholder this already used
+
+
+def _study_duration_for(days_to_exam: int) -> str:
+    # 2026-11-15 — found via a user testing their own account: every day
+    # showed "2 hrs" regardless of whether the real deadline (test_date)
+    # was 1 day away or 15 — no actual urgency signal at all. Scales with
+    # how close the real deadline is; the default 47-day placeholder
+    # (no test_date set) lands in the most relaxed tier, which is correct
+    # — there's no real known urgency to react to yet.
+    if days_to_exam <= 2:
+        return "4 hrs"
+    if days_to_exam <= 7:
+        return "3 hrs"
+    if days_to_exam <= 14:
+        return "2 hrs"
+    return "1.5 hrs"
+
+
+def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int) -> list[dict]:
+    today = date.today()
+    today_idx = today.weekday()  # 0=Mon .. 6=Sun
+    monday = today - timedelta(days=today_idx)
+    exam_date = today + timedelta(days=days_to_exam)
+    duration = _study_duration_for(days_to_exam)
+
     rows = []
     for i, day in enumerate(_WEEKDAYS):
+        # Don't plan study time on a day past the real exam date — found
+        # alongside the duration issue above: a 1-day-away deadline still
+        # showed a full Mon-Fri week, including days after the exam itself.
+        # No real test_date set -> exam_date is 47 days out, always past
+        # this week, so this never truncates in that case.
+        if monday + timedelta(days=i) > exam_date:
+            break
         subject = subjects[i % len(subjects)]
-        topic = _topic_for(db, subject, seed=f"{user.user_id}-{date.today().isocalendar()[1]}-{day}")
+        topic = _topic_for(db, subject, seed=f"{user.user_id}-{today.isocalendar()[1]}-{day}")
         if i == today_idx:
             status = "today"
         elif i < today_idx:
@@ -180,7 +219,7 @@ def _build_week(db: Session, user: User, subjects: list[str]) -> list[dict]:
             status = "done" if has_session else "missed"
         else:
             status = "pending"
-        rows.append({"day": day, "topic": topic, "subject": subject, "duration": "2 hrs", "status": status})
+        rows.append({"day": day, "topic": topic, "subject": subject, "duration": duration, "status": status})
     return rows
 
 
@@ -218,13 +257,8 @@ def update_subjects(payload: SubjectsUpdate, db: Session = Depends(get_db), user
 @router.get("/timetable")
 def get_timetable(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     prefs = _get_prefs(db, user)
-    days_to_exam = 47
-    if prefs.get("test_date"):
-        try:
-            days_to_exam = max(0, (date.fromisoformat(prefs["test_date"]) - date.today()).days)
-        except ValueError:
-            pass  # malformed date from an old/manual request — fall back to the default above
-    week = _build_week(db, user, prefs["subjects"])
+    days_to_exam = _days_to_exam(prefs)
+    week = _build_week(db, user, prefs["subjects"], days_to_exam)
 
     # One of the 4 hardcoded "session_reminders" notifications every account
     # used to see regardless of their real schedule — there's no background
@@ -242,10 +276,80 @@ def get_timetable(db: Session = Depends(get_db), user: User = Depends(get_curren
     return {"days_to_exam": days_to_exam, "rows": week}
 
 
+def _youtube_search_url(title: str) -> str:
+    return f"https://www.youtube.com/results?search_query={quote_plus(title)}"
+
+
+def _resolve_video(db: Session, topic: str) -> dict:
+    # 2026-11-15 — "suggested video" was always a generic YouTube search,
+    # never a real specific video, and the Watch button had nothing to
+    # open directly from Exam Prep itself (only after Add to Playlist).
+    # Prefers a real curated TopicVideo row (added via Settings -> Manage
+    # Topic Videos) when one exists for this topic; falls back to the
+    # same genuine search link otherwise — never a fabricated/guessed
+    # specific video this app can't verify still exists or is accurate.
+    curated = db.get(TopicVideo, topic)
+    if curated is not None:
+        return {"title": curated.title, "source": "Curated", "duration_min": 0, "video_url": curated.video_url}
+    title = f"{topic} — Overview"
+    return {"title": title, "source": "YouTube search", "duration_min": 0, "video_url": _youtube_search_url(title)}
+
+
+class TopicVideoIn(BaseModel):
+    video_url: str
+    title: str
+
+
+@router.get("/topic-videos")
+def list_topic_videos(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # Every real topic in the question bank (not just the 20 a given
+    # account's allowed subjects touch) so Settings can offer the full
+    # list to curate from, merged with whatever's already been set.
+    topics = sorted({t for (t,) in db.query(Question.topic).distinct().all()})
+    curated = {row.topic: row for row in db.query(TopicVideo).all()}
+    return {
+        "topics": [
+            {
+                "topic": t,
+                "video_url": curated[t].video_url if t in curated else None,
+                "title": curated[t].title if t in curated else None,
+            }
+            for t in topics
+        ]
+    }
+
+
+@router.put("/topic-videos/{topic}")
+def set_topic_video(topic: str, payload: TopicVideoIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # Shared across every student, not per-user — see TopicVideo's own
+    # comment in database/models.py for why (no admin-role concept yet,
+    # and a topic's best video doesn't vary by who's watching it).
+    if not payload.video_url.strip().lower().startswith(("http://", "https://")):
+        raise HTTPException(status_code=422, detail="video_url must be a real http(s) link")
+    row = db.get(TopicVideo, topic)
+    if row is None:
+        row = TopicVideo(topic=topic, video_url=payload.video_url, title=payload.title)
+        db.add(row)
+    else:
+        row.video_url = payload.video_url
+        row.title = payload.title
+    db.commit()
+    return {"detail": "Saved", "topic": topic, "video_url": row.video_url, "title": row.title}
+
+
+@router.delete("/topic-videos/{topic}")
+def delete_topic_video(topic: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    row = db.get(TopicVideo, topic)
+    if row is not None:
+        db.delete(row)
+        db.commit()
+    return {"detail": "Removed"}
+
+
 @router.get("/today-topic")
 async def get_today_topic(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     prefs = _get_prefs(db, user)
-    week = _build_week(db, user, prefs["subjects"])
+    week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
     today_row = next((r for r in week if r["status"] == "today"), week[0])  # weekend fallback: Monday's plan
     topic = today_row["topic"]
 
@@ -259,11 +363,7 @@ async def get_today_topic(db: Session = Depends(get_db), user: User = Depends(ge
     return {
         "topic": topic,
         "explainer": {"summary": explainer_text, "points": []},
-        # No real video catalog exists yet — a genuine YouTube search for the
-        # real topic, not a fabricated specific video/channel/duration.
-        "videos": [
-            {"title": f"{topic} — Overview", "source": "YouTube search", "duration_min": 0},
-        ],
+        "videos": [_resolve_video(db, topic)],
     }
 
 
@@ -300,7 +400,7 @@ async def get_mcq(
     manager: ModelManager = request.app.state.model_manager
     if topic is None:
         prefs = _get_prefs(db, user)
-        week = _build_week(db, user, prefs["subjects"])
+        week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
         today_row = next((r for r in week if r["status"] == "today"), week[0])
         topic = today_row["topic"]
 

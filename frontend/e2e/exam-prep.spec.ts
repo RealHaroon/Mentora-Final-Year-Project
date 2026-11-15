@@ -78,6 +78,50 @@ test("timetable and today's topic render without waiting for the slow MCQ call",
   await expect(page.locator("table.data-table tbody tr").first()).toBeVisible({ timeout: 10_000 });
 });
 
+test("curating a real video in Settings makes Exam Prep's Watch button use it", async ({ page }) => {
+  // Found 2026-11-15: the suggested video had no real link at all until
+  // Add to Playlist, and even then it was a generic (if correctly-queried,
+  // post-2026-11-14-fix) YouTube search, never a specific real video. This
+  // checks the full real path: curate a video for whatever topic Exam Prep
+  // is actually showing today, confirm the Watch button picks it up, then
+  // revert so the shared demo account isn't left with test data.
+  await page.goto("/exam-prep");
+  // Must wait for the populated heading specifically ("Today's Topic: X")
+  // — the bare "Today's Topic" loading-state text is present immediately
+  // and reading it too early gets "X" as an empty string.
+  const headingLocator = page.getByRole("heading", { name: /Today's Topic:/ });
+  await expect(headingLocator).toBeVisible({ timeout: 10_000 });
+  const heading = await headingLocator.innerText();
+  const topic = heading.replace(/^Today's Topic:\s*/, "").trim();
+
+  await page.goto("/dashboard#settings");
+  await page.getByRole("button", { name: "🎥 Manage Topic Videos" }).click();
+  const row = page.locator(".field-row").filter({ hasText: topic }).first();
+  await expect(row.getByPlaceholder("https://www.youtube.com/watch?v=...")).toBeVisible({ timeout: 10_000 });
+  await row.getByPlaceholder("Video title").fill(`${topic} — Playwright Test Video`);
+  await row.getByPlaceholder("https://www.youtube.com/watch?v=...").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  const [putResponse] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/exam/topic-videos/") && res.request().method() === "PUT"),
+    row.getByRole("button", { name: "Save" }).click(),
+  ]);
+  expect(putResponse.status(), await putResponse.text()).toBe(200);
+  await expect(page.getByText(`Video saved for ${topic}`)).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/exam-prep");
+  await expect(page.getByRole("heading", { name: /Today's Topic/ })).toBeVisible({ timeout: 10_000 });
+  const watchLink = page.getByRole("link", { name: "▶ Watch" });
+  await expect(watchLink).toHaveAttribute("href", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  await expect(page.getByText("Curated")).toBeVisible();
+
+  // Revert — don't leave the shared demo account's topic permanently
+  // pointed at a test video.
+  await page.goto("/dashboard#settings");
+  await page.getByRole("button", { name: "🎥 Manage Topic Videos" }).click();
+  const row2 = page.locator(".field-row", { has: page.getByText(topic, { exact: true }) }).first();
+  await row2.getByRole("button", { name: "Remove" }).click();
+  await expect(page.getByText(`Reverted ${topic} to the default search link`)).toBeVisible({ timeout: 10_000 });
+});
+
 test("ask-AI topic explainer returns a real RAG answer", async ({ page }) => {
   await page.goto("/exam-prep");
 

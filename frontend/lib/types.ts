@@ -84,7 +84,16 @@ export interface ExamPreferences {
 export interface TodayTopicResponse {
   topic: string;
   explainer: { summary: string; points: string[] };
-  videos: { title: string; source: string; duration_min: number }[];
+  videos: { title: string; source: string; duration_min: number; video_url: string }[];
+}
+
+// Settings -> Manage Topic Videos. video_url/title are null when no one
+// has curated a video for that topic yet (Exam Prep then falls back to a
+// generic YouTube search — see backend/routers/exam.py's _resolve_video).
+export interface TopicVideoEntry {
+  topic: string;
+  video_url: string | null;
+  title: string | null;
 }
 
 // Shared shape for /exam/topic-explainer and /career/ask (RAG + Groq, Phase

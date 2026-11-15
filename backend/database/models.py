@@ -231,3 +231,20 @@ class Material(Base):
     size_label: Mapped[str] = mapped_column(String(50))
     source: Mapped[str] = mapped_column(String(150))
     uploaded_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+# Added 2026-11-15 — the "suggested video" on Exam Prep was always a
+# generic YouTube search for the topic (no real video catalog exists).
+# A user asked for either real curated videos or a way to add their own
+# per topic; this is the latter — one real, editable video per topic,
+# shared across every student (not per-user) since there's no admin-role
+# concept in this app yet and a topic's best video doesn't vary by
+# student. Falls back to the generic search link when no row exists for
+# a given topic — see routers/exam.py's _resolve_video().
+class TopicVideo(Base):
+    __tablename__ = "topic_videos"
+
+    topic: Mapped[str] = mapped_column(String(150), primary_key=True)
+    video_url: Mapped[str] = mapped_column(String(500))
+    title: Mapped[str] = mapped_column(String(255))
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
