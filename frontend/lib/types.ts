@@ -113,14 +113,20 @@ export interface McqQuestion {
 export interface McqResponse {
   total: number;
   remaining: number;
+  // "groq_generated" (default live path, 2026-11-15 — M2 almost never
+  // produces valid JSON and was blocking the page for 18-45s every time),
+  // "question_generator_m2" (the real trained model, reachable via
+  // GET /exam/mcq?source=m2, not used by default), or
+  // "question_bank_fallback" (either generator failed/unavailable).
+  // Every one of these is now a real, persisted, gradable question — see
+  // McqSubmitResponse below.
   generated_by: string;
   question: McqQuestion;
 }
 
 export interface McqSubmitResponse {
   question_id: string;
-  // null only when grading is truly unavailable right now: a live
-  // M2-generated question ("generated" id, never graded) or a real-dataset
+  // null only when grading is truly unavailable right now: a real-dataset
   // question Groq couldn't determine an answer for on this attempt (rare —
   // see graded_by below for the normal case of a dataset-unlabeled one).
   correct: boolean | null;

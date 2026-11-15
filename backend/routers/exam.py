@@ -1,3 +1,4 @@
+import json
 import random
 import re
 from datetime import date, timedelta
@@ -19,6 +20,15 @@ from services.notification_service import notify_once
 router = APIRouter(prefix="/exam", tags=["exam"])
 
 _exam_rag = ExamRAG()
+# Separate instance, not the one above — found 2026-11-15 testing the new
+# Groq-generated MCQ path live: the default 300-token limit (fine for
+# topic-explainer prose) truncated mid-JSON on a question with LaTeX-style
+# math formatting (option text like "$x=3$ or $x=-\frac{1}{2}$" alone can
+# run past 300 tokens), making every one of these silently fail JSON
+# parsing and fall back to the question bank — defeating the whole point
+# of switching to Groq. Same model/API key, just enough headroom for a
+# full MCQ's question + 4 options + correct_answer to never truncate.
+_exam_mcq_rag = ExamRAG(max_tokens=700)
 
 _WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
@@ -395,17 +405,49 @@ async def topic_explainer(query: str, user: User = Depends(get_current_user)):
     return {"answer": answer}
 
 
+async def _generate_mcq_via_llm(topic: str, difficulty: str = "medium") -> dict | None:
+    # 2026-11-15 — M2 (FLAN-T5+LoRA) almost never produces valid JSON (0/32
+    # real topics tested live, see the 2026-11-13 retry-removal commit) and
+    # took 18-45s to fail even once, every single time, on the page's
+    # default load. Default live generation now goes straight to Groq
+    # instead — the same reasoning this app already applied to its RAG
+    # pipeline (Groq over local Ollama, a disclosed, deliberate tradeoff):
+    # M2 is real, trained, and evaluated (its real metrics are documented
+    # in the thesis results), but demonstrably not fit for live use, so the
+    # live default uses a reliable model instead. M2 itself stays fully
+    # reachable on request — see get_mcq's source="m2" path below — so it
+    # remains genuinely demonstrable, just not blocking the common path.
+    prompt = (
+        f"Generate one {difficulty}-difficulty multiple-choice exam question about {topic}, "
+        "suitable for a university entry test. Respond with ONLY valid JSON, no markdown "
+        "code fences, no extra commentary, in exactly this shape: "
+        '{"question": "...", "options": {"A": "...", "B": "...", "C": "...", "D": "..."}, '
+        '"correct_answer": "A"}'
+    )
+    try:
+        response = await _exam_mcq_rag.agenerate(prompt)
+    except RAGUnavailableError:
+        return None
+    cleaned = response.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.IGNORECASE).strip()
+    try:
+        parsed = json.loads(cleaned)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict) or not ({"question", "options", "correct_answer"} <= parsed.keys()):
+        return None
+    options = parsed["options"]
+    if not isinstance(options, dict) or not options or parsed["correct_answer"] not in options:
+        return None
+    return parsed
+
+
 @router.get("/mcq")
 async def get_mcq(
-    request: Request, topic: str | None = None, count: int = 5,
+    request: Request, topic: str | None = None, count: int = 5, source: str = "llm",
     db: Session = Depends(get_db), user: User = Depends(get_current_user),
 ):
-    # Phase 6 — M2 (Question Generator), with a fallback to the real question
-    # bank on failure. M2 is the model most likely to misfire (generative,
-    # not a classifier, and already documented as weak — see
-    # scripts/phase5/README.md) — a demo where one bad generation crashes the
-    # exam page is worse than quietly serving a question from the bank.
-    #
     # 2026-11-11: topic now defaults to today's real scheduled topic (same
     # one /exam/today-topic shows) instead of an unconditional fixed string
     # — found via a user testing their own account that selecting subjects
@@ -416,16 +458,52 @@ async def get_mcq(
         week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
         today_row = next((r for r in week if r["status"] == "today"), week[0])
         topic = today_row["topic"]
+        subject = today_row["subject"]
+    else:
+        subject_row = db.query(Question.subject).filter(Question.topic == topic).first()
+        subject = subject_row[0] if subject_row else topic
 
-    generated_by = "FLAN-T5"
-    try:
-        generated = await manager.infer("question_generator", topic)
+    generated: dict | None = None
+    generated_by: str | None = None
+
+    if source == "m2":
+        # Explicit, on-request path — lets the real trained model still be
+        # demonstrated live without it blocking the default experience.
+        # Phase 5/13's own docs already call this model "most likely to
+        # misfire" — that's expected and disclosed, not hidden.
+        try:
+            generated = await manager.infer("question_generator", topic)
+            generated_by = "question_generator_m2"
+        except ValueError:
+            generated = None
+    else:
+        generated = await _generate_mcq_via_llm(topic)
+        generated_by = "groq_generated" if generated is not None else None
+
+    if generated is not None:
+        # Persisted as a real Question row — not a disposable/stateless
+        # response — so submit_mcq's existing grading, weak-topic
+        # flagging, and notification logic all just work for it via the
+        # exact same path as every other question, instead of needing a
+        # separate "generated questions aren't graded" special case.
+        # correct_answer_source="ai_inferred" keeps it honestly
+        # distinguishable from the original labeled dataset (see
+        # Question.correct_answer_source's own comment).
+        row = Question(
+            subject=subject, topic=topic, subtopic=None, difficulty="medium",
+            question_text=generated["question"], options=generated["options"],
+            correct_answer=generated["correct_answer"], correct_answer_source="ai_inferred",
+            source=generated_by,
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
         question = {
-            "question_id": "generated",
-            "text": generated["question"],
-            "options": [{"value": k, "text": v} for k, v in generated["options"].items()],
+            "question_id": str(row.question_id),
+            "text": row.question_text,
+            "options": [{"value": k, "text": v} for k, v in (row.options or {}).items()],
         }
-    except ValueError:
+    else:
         fallback_query = db.query(Question).filter(Question.topic == topic)
         candidates = fallback_query.all() or db.query(Question).all()
         picked = random.choice(candidates)
@@ -475,13 +553,15 @@ async def _determine_correct_answer(question: Question) -> str | None:
 async def submit_mcq(
     request: Request, payload: McqSubmit, db: Session = Depends(get_db), user: User = Depends(get_current_user),
 ):
-    # Phase 6 — M1 (Gap Classifier), run only on wrong answers to real
-    # question-bank questions. question_id "generated" (M2's live-generated
-    # questions, see get_mcq above) has no DB row and no labeled
-    # correct_answer to grade against — can't determine correctness for it.
+    # Legacy safety net only — get_mcq now persists every generated question
+    # (Groq or M2) as a real Question row with a real integer id before
+    # ever returning it (2026-11-15), specifically so it grades through the
+    # exact same path as every other question below, correct answer and
+    # all. "generated" should never actually arrive here anymore; kept so
+    # an old cached frontend response can't crash this on int(...).
     if payload.question_id == "generated":
         return {"question_id": payload.question_id, "correct": None, "graded_by": None,
-                "detail": "Generated questions aren't graded — no stored correct answer."}
+                "detail": "This question wasn't saved properly — try Regenerate for a new one."}
 
     question = db.get(Question, int(payload.question_id))
     if question is None:
