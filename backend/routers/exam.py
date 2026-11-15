@@ -76,14 +76,23 @@ _GOAL_SUBJECTS: dict[str, list[str]] = {
     # brecorder.com's coverage of LUMHS hosting MDCAT 2024-25) — same
     # subject set as "mdcat" below, not a separate syllabus.
     "lumhs": ["Biology", "Chemistry", "Physics", "English", "Logical Reasoning"],
-    # University of Karachi's General Science group: English + General
-    # Knowledge (not in this bank) + 3 of 5 optional science subjects
-    # chosen by the student's own intermediate track (per 2026 sources on
-    # pakera.pk/educationinkarachi.net). The 5 real optionals are Physics/
-    # Chemistry/Biology/Mathematics/Computer — Computer isn't in this
-    # bank; the other 4 are each genuinely part of some student's real
-    # paper, so all 4 are offered here rather than arbitrarily picking 3.
-    "karachi_university": ["Mathematics", "Chemistry", "Physics", "Biology", "English"],
+    # University of Karachi's own real "Sample Test Paper for B.S. Programs
+    # Candidates" (2026-11-15, provided directly by the user — not a
+    # third-party guide): sections are English, IQ/GK, Physics, Computer,
+    # Maths, Chemistry, Biology, Geography, Statistics, Principle of
+    # Accounting, Principle of Commerce — the later, program-specific
+    # electives (Geography/Statistics/Accounting/Commerce) vary by which
+    # BS program a candidate applies to, same reasoning as Karachi's own
+    # "3 of 5 optional science subjects by track" setup. English, IQ/GK,
+    # and the 4 sciences this bank actually has (Physics/Chemistry/
+    # Biology/Mathematics) are common across the sample regardless of
+    # program; Computer/Geography/Statistics/Accounting/Commerce aren't in
+    # this bank at all. Found 2026-11-15: the previous version of this
+    # entry (built from third-party guides, before this real paper was
+    # available) omitted Logical Reasoning entirely despite the IQ section
+    # having real intelligence-reasoning questions (number patterns, age
+    # word problems) — exactly what this bank's Logical Reasoning covers.
+    "karachi_university": ["Mathematics", "Chemistry", "Physics", "Biology", "English", "Logical Reasoning"],
     # Iqra University's own 2024-25 undergraduate prospectus (not a
     # third-party guide): English 40%, Mathematics 30%, Analytical 30%.
     # No compulsory science subject for general undergraduate admission —
