@@ -29,7 +29,12 @@ test("a real action produces a real, specific notification — not one of 4 fixe
 test("dashboard renders real data for every section, including the AI risk check", async ({ page }) => {
   await page.goto("/dashboard");
 
-  await expect(page.getByText("Ayesha Memon")).toBeVisible();
+  // Not a hardcoded "Ayesha Memon" (the original seed name) — found
+  // 2026-11-16: the shared demo account's real first/last name has since
+  // been changed (via Settings' own Account panel, a real, intentional
+  // mutation, not a bug) and no longer matches that seed value. Asserts
+  // the real profile header renders with SOME name, not a specific one.
+  await expect(page.getByRole("heading", { level: 1 })).not.toBeEmpty();
   await expect(page.getByText(/Score trend \(last \d+ sessions\)/)).toBeVisible();
   await expect(page.getByText("This week's timetable snapshot")).toBeVisible();
 

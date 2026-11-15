@@ -136,6 +136,14 @@ async def check_at_risk(request: Request, db: Session = Depends(get_db), user: U
         notify_once(db, user.user_id, "alert", 'Score trend flagged "at risk" — Trajectory Predictor')
         db.commit()
 
+    # 2026-11-16 — the model's raw float output (e.g. 84.6) was never
+    # rounded, unlike every other percentage this app shows (get_stats'
+    # avg_score already rounds). Never surfaced before because the seeded
+    # historical scores happened to produce round predictions by
+    # coincidence; exposed once submit_mcq started feeding real, variable
+    # scores into this model's input window.
+    result["predicted_next_score"] = round(result["predicted_next_score"])
+
     return {"available": True, **result}
 
 

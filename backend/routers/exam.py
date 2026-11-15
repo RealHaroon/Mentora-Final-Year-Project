@@ -644,6 +644,23 @@ async def submit_mcq(
     is_correct = payload.answer == question.correct_answer
     weak_topics: list[str] = []
 
+    # 2026-11-16 — found the night before a real submission: nothing in the
+    # live app ever wrote a real ExamSession row (the only place that ever
+    # did was the one-time demo seed script, scripts/seed_demo_account.py).
+    # That meant answering real MCQs today never affected the timetable's
+    # Done/Missed status (_build_week's has_session check below), the
+    # dashboard's exam-session count/average score/score trend, or
+    # /dashboard/at-risk-check's 5-scored-session requirement — all of it
+    # stayed frozen at whatever the seed script set up, no matter how much
+    # real practice happened. One ExamSession per graded answer (100/0,
+    # matching this single question's correctness) makes all of that
+    # genuinely live. Deliberately MCQ-only, not video-watching — that's
+    # already tracked separately via WatchHistoryEntry for Learning Portal.
+    db.add(ExamSession(
+        user_id=user.user_id, exam_type="mcq_practice", subject=question.subject,
+        start_time=utcnow(), end_time=utcnow(), total_score=100.0 if is_correct else 0.0,
+    ))
+
     if not is_correct:
         manager: ModelManager = request.app.state.model_manager
         weak_topics = await manager.infer("gap_classifier", question.question_text)
@@ -671,7 +688,11 @@ async def submit_mcq(
                 db.add(row)
             row.score = max(0.0, row.score - 5.0)
             row.last_updated = utcnow()
-        db.commit()
+
+    # One commit for both the ExamSession above and any TopicScore rows from
+    # the weak-topics branch — previously only committed inside that branch,
+    # so a correct answer's ExamSession would never have been persisted.
+    db.commit()
 
     return {
         "question_id": payload.question_id,

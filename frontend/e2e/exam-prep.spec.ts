@@ -97,7 +97,14 @@ test("curating a real video in Settings makes Exam Prep's Watch button use it", 
   // Manage Topic Videos moved to its own /admin page 2026-11-15 — was
   // previously a toggled panel inside Dashboard Settings.
   await page.goto("/admin");
-  const row = page.locator(".field-row").filter({ hasText: topic }).first();
+  // Exact text match, not .filter({ hasText: topic }) — found 2026-11-16:
+  // that's a case-insensitive SUBSTRING match, and "Organic Chemistry" is
+  // literally a substring of "Inorganic Chemistry" (also a real topic in
+  // this list, sorting first alphabetically) — .first() silently filled in
+  // the wrong row whenever today's real topic was "Organic Chemistry". The
+  // revert step below already used exact matching correctly; this just
+  // never got the same fix.
+  const row = page.locator(".field-row", { has: page.getByText(topic, { exact: true }) }).first();
   await expect(row.getByPlaceholder("https://www.youtube.com/watch?v=...")).toBeVisible({ timeout: 10_000 });
   await row.getByPlaceholder("Video title").fill(`${topic} — Playwright Test Video`);
   await row.getByPlaceholder("https://www.youtube.com/watch?v=...").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
