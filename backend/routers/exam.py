@@ -192,7 +192,16 @@ def _study_duration_for(days_to_exam: int) -> str:
 def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int) -> list[dict]:
     today = date.today()
     today_idx = today.weekday()  # 0=Mon .. 6=Sun
-    monday = today - timedelta(days=today_idx)
+    # 2026-11-15 — found live, testing on an actual Sunday: anchoring to
+    # "this calendar week's Monday" unconditionally meant that on a
+    # weekend, every single row was a day that had ALREADY PASSED (this
+    # week's Mon-Fri, all before today), so every row showed "Missed" and
+    # a 3-days-out exam (genuinely next Wednesday) never truncated anything
+    # because the real exam date fell outside this already-past window
+    # entirely. On a weekend, jump forward to the UPCOMING Monday instead —
+    # a rolling "your next study days" view, not a fixed dead calendar week.
+    on_weekend = today_idx >= 5  # 5=Sat, 6=Sun
+    monday = today + timedelta(days=7 - today_idx) if on_weekend else today - timedelta(days=today_idx)
     exam_date = today + timedelta(days=days_to_exam)
     duration = _study_duration_for(days_to_exam)
 
@@ -207,7 +216,11 @@ def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int)
             break
         subject = subjects[i % len(subjects)]
         topic = _topic_for(db, subject, seed=f"{user.user_id}-{today.isocalendar()[1]}-{day}")
-        if i == today_idx:
+        if on_weekend:
+            # Every row in this window is the upcoming week — genuinely in
+            # the future relative to today, never "today" or already past.
+            status = "pending"
+        elif i == today_idx:
             status = "today"
         elif i < today_idx:
             has_session = (
