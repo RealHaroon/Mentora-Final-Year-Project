@@ -257,14 +257,19 @@ def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int)
         # this week, so this never truncates in that case.
         if monday + timedelta(days=i) > exam_date:
             break
+        is_today = (not on_weekend) and i == today_idx
         if on_weekend:
             # Every row in this window is the upcoming week — genuinely in
             # the future relative to today, never "today" or already past.
             status = "pending"
-        elif i == today_idx:
-            status = "today"
-        elif i < today_idx:
-            status = None  # resolved per-subject below (done/missed can differ by subject)
+        elif i < today_idx or is_today:
+            # 2026-11-16 — today's own row used to be hardcoded "today"
+            # regardless of real activity, so answering an MCQ for a
+            # subject never visibly confirmed it was done until the NEXT
+            # day, when that row finally became "past". Checked the same
+            # way as a real past day now — "today" is just "not done yet
+            # today", not a fixed label.
+            status = None  # resolved per-subject below
         else:
             status = "pending"
 
@@ -278,7 +283,8 @@ def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int)
                     .first()
                     is not None
                 )
-                subject_status = "done" if has_session else "missed"
+                not_done_label = "today" if is_today else "missed"
+                subject_status = "done" if has_session else not_done_label
             else:
                 subject_status = status
             sessions.append({"subject": subject, "topic": topic, "duration": duration, "status": subject_status})
@@ -290,6 +296,11 @@ def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int)
             "day": day,
             "sessions": sessions,
             "total_duration": _format_hours(per_subject_hours * num_subjects),
+            # Explicit flag, not inferred from session status — a subject
+            # practiced today now shows "done" same-day (see above), so
+            # status alone can no longer identify which row is "today" for
+            # get_today_topic/get_mcq's spotlight lookup below.
+            "is_today": is_today,
         })
     return rows
 
@@ -425,7 +436,10 @@ async def get_today_topic(db: Session = Depends(get_db), user: User = Depends(ge
     # weekend fallback: Monday's plan. Spotlight is the first selected
     # subject's session for the day — the panel below shows one focus
     # topic, while the full multi-subject plan lives in the timetable.
-    today_row = next((r for r in week if r["sessions"] and r["sessions"][0]["status"] == "today"), week[0])
+    # Looked up via the row's own is_today flag, not session status — a
+    # subject practiced today can now show "done" same-day (2026-11-16),
+    # so status alone no longer identifies which row is today's.
+    today_row = next((r for r in week if r.get("is_today")), week[0])
     today_session = today_row["sessions"][0]
     topic = today_session["topic"]
 
@@ -509,7 +523,7 @@ async def get_mcq(
     if topic is None:
         prefs = _get_prefs(db, user)
         week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
-        today_row = next((r for r in week if r["sessions"] and r["sessions"][0]["status"] == "today"), week[0])
+        today_row = next((r for r in week if r.get("is_today")), week[0])
         today_session = today_row["sessions"][0]
         topic = today_session["topic"]
         subject = today_session["subject"]
