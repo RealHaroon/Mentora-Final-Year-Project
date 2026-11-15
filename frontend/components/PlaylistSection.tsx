@@ -4,9 +4,13 @@ import { useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { PlaylistVideo } from "@/lib/types";
 
-const SUBJECTS = ["Mathematics", "English", "Physics", "Chemistry"];
-
-export default function PlaylistSection({ initialVideos }: { initialVideos: PlaylistVideo[] }) {
+export default function PlaylistSection({
+  initialVideos,
+  allowedSubjects,
+}: {
+  initialVideos: PlaylistVideo[];
+  allowedSubjects: string[];
+}) {
   const [videos, setVideos] = useState(initialVideos);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -56,6 +60,12 @@ export default function PlaylistSection({ initialVideos }: { initialVideos: Play
           subject: formData.get("subject"),
           source: formData.get("source"),
           duration_min: Number(formData.get("duration_min")),
+          // Found 2026-11-15 testing live: this form never sent a video_url
+          // at all, so Watch always fell back to a generic YouTube search
+          // for the title — even when a real link (or a real playlist
+          // link, like "Inorganic Chemistry" below) had been pasted into
+          // the Source field above, which is a display label, not a URL.
+          video_url: formData.get("video_url"),
         }),
       });
       // The backend silently no-ops a duplicate title (dedup by title) but
@@ -97,7 +107,7 @@ export default function PlaylistSection({ initialVideos }: { initialVideos: Play
                 <option value="" disabled>
                   Select subject
                 </option>
-                {SUBJECTS.map((s) => (
+                {allowedSubjects.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
@@ -107,12 +117,31 @@ export default function PlaylistSection({ initialVideos }: { initialVideos: Play
           </div>
           <div className="field-row">
             <div className="field">
-              <label htmlFor="video-source">Source</label>
-              <input id="video-source" name="source" required placeholder="e.g. Khan Academy" />
+              <label htmlFor="video-url">Video or playlist link</label>
+              <input
+                id="video-url"
+                name="video_url"
+                type="url"
+                required
+                placeholder="https://www.youtube.com/watch?v=... or a playlist link"
+              />
             </div>
             <div className="field">
+              <label htmlFor="video-source">Source</label>
+              <input id="video-source" name="source" required placeholder="e.g. Khan Academy, YouTube" />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field">
               <label htmlFor="video-duration">Duration (min)</label>
-              <input id="video-duration" name="duration_min" type="number" min="1" required />
+              <input
+                id="video-duration"
+                name="duration_min"
+                type="number"
+                min="1"
+                required
+                placeholder="For a playlist, estimate the total length"
+              />
             </div>
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={adding}>

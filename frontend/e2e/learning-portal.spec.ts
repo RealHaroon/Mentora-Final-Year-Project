@@ -32,9 +32,22 @@ test("add a video to the playlist, watch it (logs to watch history), then remove
   const title = uniqueTitle();
   await page.goto("/learning-portal");
 
+  // The dropdown here is now populated from the account's real allowed
+  // subjects (/exam/subjects) instead of a hardcoded 4-subject list that
+  // never included Biology or Logical Reasoning — Mathematics is one of
+  // the demo account's real subjects for its resting exam_goal
+  // (sindh_university; see backend/routers/exam.py's _GOAL_SUBJECTS and
+  // settings.spec.ts's exam-goal test, which restores this value).
   await page.getByRole("button", { name: "Add Video" }).click();
   await page.getByLabel("Title").fill(title);
   await page.getByLabel("Subject").selectOption("Mathematics");
+  // Found 2026-11-15 testing live: this form had no video URL field at
+  // all, so Watch always opened a generic YouTube search regardless of
+  // what real link a student pasted into Source — asserting the popup
+  // actually lands on THIS real link, not just that a popup opened,
+  // guards against that regression.
+  const realUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  await page.getByLabel("Video or playlist link").fill(realUrl);
   await page.getByLabel("Source").fill("Playwright");
   await page.getByLabel("Duration (min)").fill("5");
   await page.getByRole("button", { name: "Add to playlist" }).click();
@@ -48,11 +61,13 @@ test("add a video to the playlist, watch it (logs to watch history), then remove
     .filter({ has: page.getByRole("button", { name: "Remove" }) });
   await expect(playlistRow).toBeVisible({ timeout: 10_000 });
 
-  // "Watch" opens a new tab (window.open) and logs a real watch-history entry
-  // — don't wait on the popup, just confirm the history side-effect landed.
-  const popupPromise = page.waitForEvent("popup").catch(() => null);
+  // "Watch" opens a new tab (window.open) to the REAL link, and logs a
+  // real watch-history entry.
+  const popupPromise = page.waitForEvent("popup");
   await playlistRow.getByRole("button", { name: "Watch" }).click();
-  await popupPromise;
+  const popup = await popupPromise;
+  await expect.poll(() => popup.url()).toBe(realUrl);
+  await popup.close();
 
   await page.locator('a[href="#watch-history"]').first().click();
   const historyRow = page.locator("h3#watch-history ~ .media-row").filter({ hasText: title });
@@ -69,6 +84,7 @@ test("subject filter narrows the playlist to a real server-side query, not a cli
   await page.getByRole("button", { name: "Add Video" }).click();
   await page.getByLabel("Title").fill(title);
   await page.getByLabel("Subject").selectOption("Chemistry");
+  await page.getByLabel("Video or playlist link").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await page.getByLabel("Source").fill("Playwright");
   await page.getByLabel("Duration (min)").fill("5");
   await page.getByRole("button", { name: "Add to playlist" }).click();

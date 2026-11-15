@@ -111,6 +111,12 @@ def get_playlist(subject: str | None = None, db: Session = Depends(get_db), user
 
 @router.post("/playlist")
 def add_to_playlist(payload: PlaylistItemIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # 2026-11-15 — the frontend form now always sends a real video_url (see
+    # PlaylistSection.tsx), but this endpoint is reachable directly, so
+    # still guard against garbage input the same way exam.py's
+    # set_topic_video does for curated videos.
+    if payload.video_url is not None and not payload.video_url.strip().lower().startswith(("http://", "https://")):
+        raise HTTPException(status_code=422, detail="video_url must be a real http(s) link")
     existing = db.scalar(
         select(PlaylistItem).where(PlaylistItem.user_id == user.user_id, PlaylistItem.title == payload.title)
     )

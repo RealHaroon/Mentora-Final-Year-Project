@@ -15,6 +15,7 @@ test("a real action produces a real, specific notification — not one of 4 fixe
   await page.getByRole("button", { name: "Add Video" }).click();
   await page.getByLabel("Title").fill(title);
   await page.getByLabel("Subject").selectOption("Physics");
+  await page.getByLabel("Video or playlist link").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await page.getByLabel("Source").fill("Playwright");
   await page.getByLabel("Duration (min)").fill("5");
   await page.getByRole("button", { name: "Add to playlist" }).click();

@@ -7,7 +7,7 @@ import PlaylistSection from "@/components/PlaylistSection";
 import MaterialsSection from "@/components/MaterialsSection";
 import WatchHistorySection from "@/components/WatchHistorySection";
 import { apiFetchServer } from "@/lib/api";
-import type { Assignment, LearningStats, Material, PlaylistVideo } from "@/lib/types";
+import type { Assignment, ExamPreferences, LearningStats, Material, PlaylistVideo } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Learning Portal",
@@ -18,12 +18,10 @@ export const metadata: Metadata = {
 // the server itself filters correctly on every direct request.
 export const dynamic = "force-dynamic";
 
-const SUBJECT_FILTERS = ["Mathematics", "English", "Physics", "Chemistry"];
-
 async function loadPortalData(subject?: string) {
   const token = (await cookies()).get("mentora_session")?.value;
   try {
-    const [stats, playlist, assignments, materials] = await Promise.all([
+    const [stats, playlist, assignments, materials, examPrefs] = await Promise.all([
       apiFetchServer<LearningStats>("/learning/stats", token),
       apiFetchServer<{ videos: PlaylistVideo[] }>(
         `/learning/playlist${subject ? `?subject=${encodeURIComponent(subject)}` : ""}`,
@@ -31,17 +29,31 @@ async function loadPortalData(subject?: string) {
       ),
       apiFetchServer<{ assignments: Assignment[] }>("/learning/assignments", token),
       apiFetchServer<{ materials: Material[] }>("/learning/materials", token),
+      // 2026-11-15 — found via a user testing their own account: the
+      // subject filter/Add Video dropdown were a hardcoded 4-subject list
+      // that never included Biology or Logical Reasoning, regardless of
+      // the account's real exam_goal (e.g. Sindh University's real syllabus
+      // includes Logical Reasoning — see backend/routers/exam.py's
+      // _GOAL_SUBJECTS). Same real subjects Exam Prep already offers.
+      apiFetchServer<ExamPreferences>("/exam/subjects", token),
     ]);
-    return { stats, videos: playlist.videos, assignments: assignments.assignments, materials: materials.materials, error: null as string | null };
+    return {
+      stats,
+      videos: playlist.videos,
+      assignments: assignments.assignments,
+      materials: materials.materials,
+      allowedSubjects: examPrefs.allowed_subjects,
+      error: null as string | null,
+    };
   } catch {
-    return { stats: null, videos: [], assignments: [], materials: [], error: "Couldn't load this right now" };
+    return { stats: null, videos: [], assignments: [], materials: [], allowedSubjects: [], error: "Couldn't load this right now" };
   }
 }
 
 export default async function LearningPortalPage(props: { searchParams: Promise<{ subject?: string }> }) {
   const searchParams = await props.searchParams;
   const activeSubject = searchParams.subject;
-  const { stats, videos, assignments, materials, error } = await loadPortalData(activeSubject);
+  const { stats, videos, assignments, materials, allowedSubjects, error } = await loadPortalData(activeSubject);
 
   return (
     <>
@@ -102,7 +114,7 @@ export default async function LearningPortalPage(props: { searchParams: Promise<
                 Watch History
               </a>
               <div className="group-label">Filter by Subject</div>
-              {SUBJECT_FILTERS.map((subject) => (
+              {allowedSubjects.map((subject) => (
                 // Plain <a>, not next/link: Next's client Router Cache can
                 // serve a stale render when only ?subject= changes on the
                 // same pathname, so force a real full-page navigation here.
@@ -129,7 +141,7 @@ export default async function LearningPortalPage(props: { searchParams: Promise<
             </aside>
 
             <div>
-              <PlaylistSection initialVideos={videos} />
+              <PlaylistSection initialVideos={videos} allowedSubjects={allowedSubjects} />
 
               <h3 id="assignments" style={{ fontFamily: "var(--font-display)", margin: "28px 0 14px", scrollMarginTop: 90 }}>
                 MCQ Assignments
