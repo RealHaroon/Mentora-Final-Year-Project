@@ -71,6 +71,10 @@ export interface TimetableRow {
   // routers/exam.py's _build_week) — a day is no longer just one subject.
   sessions: TimetableSession[];
   total_duration: string;
+  // Explicit, not inferred from session status — a subject practiced today
+  // can show "done" same-day (2026-11-16), so status alone can't identify
+  // which row is today's.
+  is_today: boolean;
 }
 
 export interface TimetableResponse {

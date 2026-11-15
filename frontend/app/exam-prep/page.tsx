@@ -65,6 +65,14 @@ export default function ExamPrepPage() {
   // session's actual progress lives here instead.
   const [sessionAnswered, setSessionAnswered] = useState(0);
   const [loadingNextMcq, setLoadingNextMcq] = useState(false);
+  // Found 2026-11-16: the MCQ box had no way to pick which of today's
+  // selected subjects to practice — it always defaulted to the spotlight
+  // (first selected) subject, so a student could only ever mark ONE
+  // subject "Done" per day no matter how many questions they answered.
+  // Defaults to that same spotlight subject once the timetable loads, but
+  // can now be switched to any of today's real subjects.
+  const [mcqSubject, setMcqSubject] = useState<string | null>(null);
+  const [mcqTopic, setMcqTopic] = useState<string | null>(null);
   const [addedVideos, setAddedVideos] = useState<string[]>([]);
 
   const [topicQuestion, setTopicQuestion] = useState("");
@@ -106,12 +114,27 @@ export default function ExamPrepPage() {
     setSessionAnswered(0);
     setMcqResult(null);
     const timetable = apiFetch<TimetableResponse>("/exam/timetable")
-      .then(setTimetable)
+      .then((data) => {
+        setTimetable(data);
+        // Only on first load (prev === null) — once the student has picked
+        // a subject, a later Regenerate/reload shouldn't silently snap back
+        // to the spotlight subject underneath them.
+        const todayRow = data.rows.find((r) => r.is_today);
+        const firstSession = todayRow?.sessions[0];
+        if (firstSession) {
+          setMcqSubject((prev) => prev ?? firstSession.subject);
+          setMcqTopic((prev) => prev ?? firstSession.topic);
+        }
+      })
       .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load the timetable"));
     const topic = apiFetch<TodayTopicResponse>("/exam/today-topic")
       .then(setTodayTopic)
       .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load today's topic"));
-    const mcq = apiFetch<McqResponse>("/exam/mcq")
+    // If a subject was already picked (a Regenerate after switching away
+    // from the spotlight subject), keep practicing THAT one instead of
+    // silently snapping the question back to the spotlight subject while
+    // the dropdown above still shows the one the student actually chose.
+    const mcq = apiFetch<McqResponse>(mcqTopic ? `/exam/mcq?topic=${encodeURIComponent(mcqTopic)}` : "/exam/mcq")
       .then(setMcq)
       .catch((err) => setLoadError(err instanceof ApiError ? err.message : "Couldn't load the MCQ"));
     return { timetable, topic, mcq, all: Promise.allSettled([timetable, topic, mcq]) };
@@ -225,14 +248,17 @@ export default function ExamPrepPage() {
     await fetchMcq();
   }
 
-  async function fetchMcq() {
+  async function fetchMcq(topicOverride?: string) {
     setLoadingNextMcq(true);
     setMcqResult(null);
     setMcq(null);
     try {
       // Explicit topic keeps the whole session on the topic it started
-      // with, rather than re-resolving "today's topic" fresh each call.
-      const next = await apiFetch<McqResponse>(`/exam/mcq?topic=${encodeURIComponent(todayTopic?.topic ?? "")}`);
+      // with, rather than re-resolving "today's topic" fresh each call —
+      // mcqTopic (not todayTopic?.topic) so the session stays on whichever
+      // subject was actually picked, not always the spotlight one.
+      const topic = topicOverride ?? mcqTopic ?? "";
+      const next = await apiFetch<McqResponse>(`/exam/mcq?topic=${encodeURIComponent(topic)}`);
       setMcq(next);
     } catch (err) {
       setLoadError(err instanceof ApiError ? err.message : "Couldn't load the next question");
@@ -240,6 +266,17 @@ export default function ExamPrepPage() {
       setLoadingNextMcq(false);
     }
   }
+
+  function handleMcqSubjectChange(subject: string) {
+    const session = todaySessions.find((s) => s.subject === subject);
+    if (!session) return;
+    setMcqSubject(subject);
+    setMcqTopic(session.topic);
+    setSessionAnswered(0);
+    fetchMcq(session.topic);
+  }
+
+  const todaySessions = timetable?.rows.find((r) => r.is_today)?.sessions ?? [];
 
   return (
     <>
@@ -497,11 +534,31 @@ export default function ExamPrepPage() {
             ))}
           </div>
 
+          {todaySessions.length > 0 && (
+            <div className="flex-between" style={{ marginTop: 24, marginBottom: 0, flexWrap: "wrap", gap: 8 }}>
+              <label htmlFor="mcq-subject-select" className="small-muted">
+                Practice subject
+              </label>
+              <select
+                id="mcq-subject-select"
+                value={mcqSubject ?? ""}
+                onChange={(e) => handleMcqSubjectChange(e.target.value)}
+                disabled={loadingNextMcq}
+              >
+                {todaySessions.map((s) => (
+                  <option key={s.subject} value={s.subject}>
+                    {s.subject} — {STATUS_LABEL[s.status]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <form id="mcq-form" name="mcq-form" className="panel mt-24" onSubmit={handleMcqSubmit}>
             {mcq ? (
               sessionAnswered >= mcq.total ? (
                 <>
-                  <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
+                  <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {mcqTopic} (AI-Generated)</h4>
                   <div className="form-success">
                     Session complete — you answered {mcq.total} question{mcq.total === 1 ? "" : "s"} on this topic.
                   </div>
@@ -516,7 +573,7 @@ export default function ExamPrepPage() {
                 </>
               ) : (
                 <>
-                  <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {todayTopic?.topic} (AI-Generated)</h4>
+                  <h4 style={{ margin: "0 0 14px" }}>MCQ Practice — {mcqTopic} (AI-Generated)</h4>
                   <p
                     style={{ fontSize: "0.92rem", margin: "0 0 14px", whiteSpace: "pre-line" }}
                     data-question-id={mcq.question.question_id}
