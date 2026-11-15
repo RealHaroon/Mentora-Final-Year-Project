@@ -124,6 +124,14 @@ test("curating a real video in Settings makes Exam Prep's Watch button use it", 
 
 test("ask-AI topic explainer returns a real RAG answer", async ({ page }) => {
   await page.goto("/exam-prep");
+  // Found 2026-11-15 testing live: this box's own position shifts as the
+  // page's other async sections (today-topic, MCQ) finish loading and grow
+  // — interacting with it before the page settles can click/type into the
+  // wrong element entirely (the panel above it had already grown past the
+  // reserved minHeight once, in one case landing a click on an MCQ radio
+  // instead). Waiting for the real explainer text — not just "Loading…" —
+  // before interacting avoids that same race here.
+  await expect(page.locator("#topic-explainer")).not.toContainText("Loading…", { timeout: 15_000 });
 
   await page.getByPlaceholder(/How do I factor a quadratic/).fill("What is the quadratic formula?");
   await page.getByRole("button", { name: "Ask" }).click();
@@ -131,4 +139,15 @@ test("ask-AI topic explainer returns a real RAG answer", async ({ page }) => {
   // Groq-backed RAG call — a few seconds normally, generous timeout for a
   // cold connection (Phase 9 §9's pre-warm rationale).
   await expect(page.getByRole("button", { name: "Ask" })).toBeVisible({ timeout: 30_000 });
+
+  // The previous version of this test only checked the button's own
+  // loading-state cycle, which would have passed even if the answer never
+  // actually rendered — assert real, specific content instead. A dedicated
+  // data-testid, not DOM-order matching: the explainer's own summary <p>
+  // sits earlier in the same panel and isn't a reliable "last paragraph".
+  const answer = page.getByTestId("topic-ask-answer");
+  await expect(answer).toBeVisible();
+  await expect(answer).not.toBeEmpty();
+  const text = (await answer.innerText()).toLowerCase();
+  expect(text).toMatch(/quadratic|formula|discriminant/);
 });

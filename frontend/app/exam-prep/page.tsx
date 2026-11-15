@@ -376,26 +376,42 @@ export default function ExamPrepPage() {
               <div className="small-muted" style={{ marginBottom: 8 }}>
                 AI Topic Explainer
               </div>
-              {todayTopic ? (
-                <>
-                  <p style={{ fontSize: "0.88rem", color: "var(--ink-700)" }}>{todayTopic.explainer.summary}</p>
-                  <ul
-                    style={{
-                      margin: "0 0 16px",
-                      paddingLeft: 18,
-                      listStyle: "disc",
-                      fontSize: "0.85rem",
-                      color: "var(--ink-700)",
-                    }}
-                  >
-                    {todayTopic.explainer.points.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p className="small-muted">Loading…</p>
-              )}
+              {/* minHeight reserves roughly the real content's typical size
+                  so the panel doesn't visibly grow once it arrives — found
+                  2026-11-15 live: the "Ask AI about this topic" box right
+                  below this jumped downward the instant the explainer
+                  loaded, and a click/type aimed at it during that brief
+                  window could land on the wrong element entirely (verified:
+                  it hit an MCQ radio button instead). Doesn't fully
+                  eliminate the shift for an unusually long explainer, but
+                  removes it for the typical case. */}
+              {/* 400px, not a guess: the explainer call is capped at 300
+                  Groq tokens server-side (rag_core/pipeline.py's
+                  RAGPipeline default), and a near-max-length real response
+                  measured ~380px tall live — this covers that worst case
+                  with a small margin, rather than an arbitrary number. */}
+              <div style={{ minHeight: 400 }}>
+                {todayTopic ? (
+                  <>
+                    <p style={{ fontSize: "0.88rem", color: "var(--ink-700)" }}>{todayTopic.explainer.summary}</p>
+                    <ul
+                      style={{
+                        margin: "0 0 16px",
+                        paddingLeft: 18,
+                        listStyle: "disc",
+                        fontSize: "0.85rem",
+                        color: "var(--ink-700)",
+                      }}
+                    >
+                      {todayTopic.explainer.points.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="small-muted">Loading…</p>
+                )}
+              </div>
               <a href="#mcq-form" className="btn btn-primary btn-block" style={{ marginBottom: 14 }}>
                 Take MCQ Test →
               </a>
@@ -428,7 +444,11 @@ export default function ExamPrepPage() {
                 </div>
               )}
               {topicAnswer && (
-                <p className="small-muted" style={{ marginTop: 12, marginBottom: 0, whiteSpace: "pre-wrap" }}>
+                <p
+                  data-testid="topic-ask-answer"
+                  className="small-muted"
+                  style={{ marginTop: 12, marginBottom: 0, whiteSpace: "pre-wrap" }}
+                >
                   {topicAnswer}
                 </p>
               )}
