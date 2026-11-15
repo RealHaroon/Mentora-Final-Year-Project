@@ -347,17 +347,30 @@ export default function ExamPrepPage() {
             </thead>
             <tbody>
               {timetable ? (
-                timetable.rows.map((row) => (
-                  <tr key={row.day}>
-                    <td>{row.day}</td>
-                    <td>{row.topic}</td>
-                    <td>{row.subject}</td>
-                    <td>{row.duration}</td>
-                    <td>
-                      <span className={`status-pill status-${row.status}`}>{STATUS_LABEL[row.status]}</span>
-                    </td>
-                  </tr>
-                ))
+                timetable.rows.flatMap((row) =>
+                  row.sessions.map((session, i) => (
+                    <tr key={`${row.day}-${session.subject}`}>
+                      {/* Day name shown once per day, spanning all of that
+                          day's subject sessions, instead of repeating it on
+                          every row — a day now covers every selected
+                          subject, not just one. */}
+                      {i === 0 && (
+                        <td rowSpan={row.sessions.length} style={{ verticalAlign: "top" }}>
+                          <div style={{ fontWeight: 600 }}>{row.day}</div>
+                          <div className="small-muted" style={{ fontWeight: 400 }}>
+                            {row.total_duration} total
+                          </div>
+                        </td>
+                      )}
+                      <td>{session.topic}</td>
+                      <td>{session.subject}</td>
+                      <td>{session.duration}</td>
+                      <td>
+                        <span className={`status-pill status-${session.status}`}>{STATUS_LABEL[session.status]}</span>
+                      </td>
+                    </tr>
+                  )),
+                )
               ) : (
                 <tr>
                   <td colSpan={5} className="small-muted">

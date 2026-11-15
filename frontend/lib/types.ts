@@ -58,12 +58,19 @@ export type AtRiskCheckResponse =
 
 // ---- exam ----
 
-export interface TimetableRow {
-  day: string;
-  topic: string;
+export interface TimetableSession {
   subject: string;
+  topic: string;
   duration: string;
   status: "pending" | "done" | "today" | "missed";
+}
+
+export interface TimetableRow {
+  day: string;
+  // Every selected subject gets a real session every day (see backend/
+  // routers/exam.py's _build_week) — a day is no longer just one subject.
+  sessions: TimetableSession[];
+  total_duration: string;
 }
 
 export interface TimetableResponse {

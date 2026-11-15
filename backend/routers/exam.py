@@ -183,20 +183,37 @@ def _days_to_exam(prefs: dict) -> int:
     return 47  # no real deadline known — same arbitrary placeholder this already used
 
 
-def _study_duration_for(days_to_exam: int) -> str:
-    # 2026-11-15 — found via a user testing their own account: every day
-    # showed "2 hrs" regardless of whether the real deadline (test_date)
-    # was 1 day away or 15 — no actual urgency signal at all. Scales with
-    # how close the real deadline is; the default 47-day placeholder
-    # (no test_date set) lands in the most relaxed tier, which is correct
-    # — there's no real known urgency to react to yet.
-    if days_to_exam <= 2:
-        return "4 hrs"
+def _daily_study_hours_for(days_to_exam: int) -> float:
+    # 2026-11-15 — found via a user testing their own account with 5
+    # subjects selected and only 3 real days left: the old version picked
+    # ONE subject per day (round-robin by weekday index) for a flat "3
+    # hrs", so with only 3 days on the board, 2 of the 5 selected subjects
+    # (English, Logical Reasoning) never appeared anywhere, and "3 hrs"
+    # was the subject's ENTIRE day, not a slice of a bigger one — not a
+    # realistic way to actually prepare for an exam. This is now the TOTAL
+    # study commitment across ALL selected subjects for one day, and it
+    # ramps up as the deadline gets closer; _build_week below splits it
+    # across every selected subject so each one gets a real session every
+    # day instead of being skipped entirely.
+    if days_to_exam <= 1:
+        return 9.0
+    if days_to_exam <= 3:
+        return 7.0
     if days_to_exam <= 7:
-        return "3 hrs"
+        return 5.0
     if days_to_exam <= 14:
-        return "2 hrs"
-    return "1.5 hrs"
+        return 3.5
+    return 2.5  # no real deadline pressure yet (default 47-day placeholder included)
+
+
+def _format_hours(hours: float) -> str:
+    if hours < 1:
+        return f"{round(hours * 60)} min"
+    if hours == 1:
+        return "1 hr"
+    if hours == int(hours):
+        return f"{int(hours)} hrs"
+    return f"{hours:g} hrs"
 
 
 def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int) -> list[dict]:
@@ -213,19 +230,24 @@ def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int)
     on_weekend = today_idx >= 5  # 5=Sat, 6=Sun
     monday = today + timedelta(days=7 - today_idx) if on_weekend else today - timedelta(days=today_idx)
     exam_date = today + timedelta(days=days_to_exam)
-    duration = _study_duration_for(days_to_exam)
+
+    # Every selected subject gets a real slice of each day's total budget
+    # — rounded to the nearest half hour, with a 30-min floor so a packed
+    # subject list never dissolves into meaningless slivers.
+    daily_hours = _daily_study_hours_for(days_to_exam)
+    num_subjects = max(len(subjects), 1)
+    per_subject_hours = max(0.5, round((daily_hours / num_subjects) * 2) / 2)
+    duration = _format_hours(per_subject_hours)
 
     rows = []
     for i, day in enumerate(_WEEKDAYS):
         # Don't plan study time on a day past the real exam date — found
-        # alongside the duration issue above: a 1-day-away deadline still
+        # alongside the hours issue above: a 1-day-away deadline still
         # showed a full Mon-Fri week, including days after the exam itself.
         # No real test_date set -> exam_date is 47 days out, always past
         # this week, so this never truncates in that case.
         if monday + timedelta(days=i) > exam_date:
             break
-        subject = subjects[i % len(subjects)]
-        topic = _topic_for(db, subject, seed=f"{user.user_id}-{today.isocalendar()[1]}-{day}")
         if on_weekend:
             # Every row in this window is the upcoming week — genuinely in
             # the future relative to today, never "today" or already past.
@@ -233,16 +255,33 @@ def _build_week(db: Session, user: User, subjects: list[str], days_to_exam: int)
         elif i == today_idx:
             status = "today"
         elif i < today_idx:
-            has_session = (
-                db.query(ExamSession)
-                .filter(ExamSession.user_id == user.user_id, ExamSession.subject == subject)
-                .first()
-                is not None
-            )
-            status = "done" if has_session else "missed"
+            status = None  # resolved per-subject below (done/missed can differ by subject)
         else:
             status = "pending"
-        rows.append({"day": day, "topic": topic, "subject": subject, "duration": duration, "status": status})
+
+        sessions = []
+        for subject in subjects:
+            topic = _topic_for(db, subject, seed=f"{user.user_id}-{today.isocalendar()[1]}-{day}-{subject}")
+            if status is None:
+                has_session = (
+                    db.query(ExamSession)
+                    .filter(ExamSession.user_id == user.user_id, ExamSession.subject == subject)
+                    .first()
+                    is not None
+                )
+                subject_status = "done" if has_session else "missed"
+            else:
+                subject_status = status
+            sessions.append({"subject": subject, "topic": topic, "duration": duration, "status": subject_status})
+        # What's actually scheduled that day in total — not just the raw
+        # tier from _daily_study_hours_for, since per_subject_hours is
+        # rounded to the nearest half hour first (e.g. 7.0 hrs / 5 subjects
+        # rounds up to 1.5 hrs each = 7.5 hrs actually on the board).
+        rows.append({
+            "day": day,
+            "sessions": sessions,
+            "total_duration": _format_hours(per_subject_hours * num_subjects),
+        })
     return rows
 
 
@@ -286,14 +325,15 @@ def get_timetable(db: Session = Depends(get_db), user: User = Depends(get_curren
     # One of the 4 hardcoded "session_reminders" notifications every account
     # used to see regardless of their real schedule — there's no background
     # scheduler in this app, so this fires opportunistically whenever the
-    # timetable is actually viewed, naming tomorrow's real topic rather than
-    # a fixed "Grammar session — 7 PM". notify_once's dedup means it only
-    # actually inserts once per distinct (topic, day) pending reminder.
+    # timetable is actually viewed, naming tomorrow's real subjects rather
+    # than a fixed "Grammar session — 7 PM". notify_once's dedup means it
+    # only actually inserts once per distinct pending reminder.
     today_idx = date.today().weekday()
-    if today_idx < len(_WEEKDAYS) - 1:
+    if today_idx < len(_WEEKDAYS) - 1 and today_idx + 1 < len(week):
         tomorrow = week[today_idx + 1]
-        if tomorrow["status"] == "pending":
-            notify_once(db, user.user_id, "time", f"Tomorrow: {tomorrow['topic']} session ({tomorrow['subject']})")
+        if tomorrow["sessions"] and tomorrow["sessions"][0]["status"] == "pending":
+            subjects_str = ", ".join(s["subject"] for s in tomorrow["sessions"])
+            notify_once(db, user.user_id, "time", f"Tomorrow: {subjects_str} session(s)")
             db.commit()
 
     return {"days_to_exam": days_to_exam, "rows": week}
@@ -373,11 +413,15 @@ def delete_topic_video(topic: str, db: Session = Depends(get_db), user: User = D
 async def get_today_topic(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     prefs = _get_prefs(db, user)
     week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
-    today_row = next((r for r in week if r["status"] == "today"), week[0])  # weekend fallback: Monday's plan
-    topic = today_row["topic"]
+    # weekend fallback: Monday's plan. Spotlight is the first selected
+    # subject's session for the day — the panel below shows one focus
+    # topic, while the full multi-subject plan lives in the timetable.
+    today_row = next((r for r in week if r["sessions"] and r["sessions"][0]["status"] == "today"), week[0])
+    today_session = today_row["sessions"][0]
+    topic = today_session["topic"]
 
     try:
-        explainer_text = await _exam_rag.answer(f"Explain {topic} for {today_row['subject']} exam preparation")
+        explainer_text = await _exam_rag.answer(f"Explain {topic} for {today_session['subject']} exam preparation")
     except RAGUnavailableError:
         explainer_text = (
             f"AI explainer is temporarily unavailable — try the 'Ask AI about this topic' box below once it's back."
@@ -456,9 +500,10 @@ async def get_mcq(
     if topic is None:
         prefs = _get_prefs(db, user)
         week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
-        today_row = next((r for r in week if r["status"] == "today"), week[0])
-        topic = today_row["topic"]
-        subject = today_row["subject"]
+        today_row = next((r for r in week if r["sessions"] and r["sessions"][0]["status"] == "today"), week[0])
+        today_session = today_row["sessions"][0]
+        topic = today_session["topic"]
+        subject = today_session["subject"]
     else:
         subject_row = db.query(Question.subject).filter(Question.topic == topic).first()
         subject = subject_row[0] if subject_row else topic
