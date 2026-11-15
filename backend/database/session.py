@@ -40,3 +40,19 @@ def run_additive_migrations():
                     continue
                 col_type = column.type.compile(dialect=engine.dialect)
                 conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type}'))
+
+
+def backfill_question_answer_sources():
+    """
+    2026-11-15 — correct_answer_source is new and NULL on every existing
+    row after run_additive_migrations() above adds it, including the 378
+    Mathematics rows that already have a real correct_answer from the
+    original Kaggle dataset. Labels those as "dataset" so they're not
+    indistinguishable from a genuinely unlabeled row. Idempotent (only
+    touches rows still NULL) — safe to call on every startup.
+    """
+    with engine.begin() as conn:
+        conn.execute(text(
+            "UPDATE questions SET correct_answer_source = 'dataset' "
+            "WHERE correct_answer_source IS NULL AND correct_answer IS NOT NULL AND correct_answer != ''"
+        ))

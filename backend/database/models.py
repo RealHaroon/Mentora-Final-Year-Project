@@ -76,6 +76,14 @@ class Question(Base):
     options: Mapped[dict] = mapped_column(JSON)
     correct_answer: Mapped[str] = mapped_column(String(10))
     source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # "dataset" when correct_answer came from the original labeled source
+    # (e.g. the Kaggle math dataset); "ai_inferred" when it was never in
+    # the data (the 1777 MDCAT-sourced questions whose scanned answer-key
+    # pages didn't OCR reliably — see mentora_data/SOURCES.md) and Groq
+    # determined it on first submission instead, persisted here so it's
+    # asked once per question, not once per student. NULL for rows neither
+    # has applied to yet (still genuinely ungraded).
+    correct_answer_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
 
 class SessionAnswer(Base):

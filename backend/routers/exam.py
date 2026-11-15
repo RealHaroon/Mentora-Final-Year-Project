@@ -1,4 +1,5 @@
 import random
+import re
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -325,6 +326,38 @@ async def get_mcq(
     return {"total": count, "remaining": count - 1, "generated_by": generated_by, "question": question}
 
 
+async def _determine_correct_answer(question: Question) -> str | None:
+    # 2026-11-15 — 1777 of the 2155 seeded questions (every MDCAT-sourced
+    # one — see mentora_data/SOURCES.md) have no correct_answer at all: the
+    # original scanned answer-key pages didn't OCR reliably. Rather than
+    # leave those permanently ungraded, ask Groq to determine the answer
+    # from the question's own text — a plain reasoning call via agenerate(),
+    # not retrieval (there's no knowledge-base lookup involved, just "solve
+    # this question"). Result is persisted by the caller so this runs once
+    # per question, not once per student.
+    options = question.options or {}
+    options_text = "\n".join(f"{k}. {v}" for k, v in options.items())
+    prompt = (
+        "You are grading a multiple-choice exam question. Determine the single "
+        f"correct answer.\n\nQuestion: {question.question_text}\n\nOptions:\n{options_text}\n\n"
+        "Respond with ONLY the letter of the correct option (for example: A). "
+        "No explanation, no punctuation, nothing else."
+    )
+    try:
+        response = await _exam_rag.agenerate(prompt)
+    except RAGUnavailableError:
+        return None
+    cleaned = response.strip().upper()
+    valid_keys = set(options.keys())
+    # Looks for a whole-word match first (handles "The answer is B" even
+    # though the prompt asks for just the letter) — stricter exact-match
+    # fallback covers a bare "B" response with no word-boundary to match.
+    for key in valid_keys:
+        if re.search(rf"\b{re.escape(key)}\b", cleaned):
+            return key
+    return cleaned if cleaned in valid_keys else None
+
+
 @router.post("/mcq/submit")
 async def submit_mcq(
     request: Request, payload: McqSubmit, db: Session = Depends(get_db), user: User = Depends(get_current_user),
@@ -334,20 +367,32 @@ async def submit_mcq(
     # questions, see get_mcq above) has no DB row and no labeled
     # correct_answer to grade against — can't determine correctness for it.
     if payload.question_id == "generated":
-        return {"question_id": payload.question_id, "correct": None,
+        return {"question_id": payload.question_id, "correct": None, "graded_by": None,
                 "detail": "Generated questions aren't graded — no stored correct answer."}
 
     question = db.get(Question, int(payload.question_id))
     if question is None:
-        return {"question_id": payload.question_id, "correct": None, "detail": "Unknown question_id."}
+        return {"question_id": payload.question_id, "correct": None, "graded_by": None, "detail": "Unknown question_id."}
 
     # A large fraction of the seeded question bank (Phase 3/4's historic past
     # papers) has no labeled correct_answer at all — grading those would
     # always report "incorrect" regardless of the real answer, which is worse
-    # than saying plainly that this one can't be graded.
+    # than saying plainly that this one can't be graded. 2026-11-15: now
+    # asks Groq to determine it instead of leaving it permanently ungraded
+    # — see _determine_correct_answer(). Persisted so it's asked once per
+    # question, not once per student; "ai_inferred" is reported back so the
+    # frontend can disclose this wasn't from the original dataset.
     if not question.correct_answer:
-        return {"question_id": payload.question_id, "correct": None,
-                "correct_answer": None, "detail": "This question has no labeled correct answer."}
+        determined = await _determine_correct_answer(question)
+        if determined is None:
+            return {
+                "question_id": payload.question_id, "correct": None, "correct_answer": None, "graded_by": None,
+                "detail": "This question has no labeled correct answer, and AI grading couldn't "
+                          "determine one right now — try submitting again shortly.",
+            }
+        question.correct_answer = determined
+        question.correct_answer_source = "ai_inferred"
+        db.commit()
 
     is_correct = payload.answer == question.correct_answer
     weak_topics: list[str] = []
@@ -385,5 +430,6 @@ async def submit_mcq(
         "question_id": payload.question_id,
         "correct": is_correct,
         "correct_answer": question.correct_answer,
+        "graded_by": question.correct_answer_source,
         "weak_topics_flagged": weak_topics,
     }

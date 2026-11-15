@@ -110,11 +110,17 @@ export interface McqResponse {
 
 export interface McqSubmitResponse {
   question_id: string;
-  // null for a question with no labeled correct_answer in the question bank
-  // (common — only ~17% of the seeded historic past-paper questions have
-  // one) or for a live M2-generated question ("generated" id, never graded).
+  // null only when grading is truly unavailable right now: a live
+  // M2-generated question ("generated" id, never graded) or a real-dataset
+  // question Groq couldn't determine an answer for on this attempt (rare —
+  // see graded_by below for the normal case of a dataset-unlabeled one).
   correct: boolean | null;
   correct_answer: string | null;
+  // "dataset" = the original labeled source (e.g. the Kaggle math set).
+  // "ai_inferred" = the ~82% of the seeded historic past-paper questions
+  // with no real answer key (see mentora_data/SOURCES.md) — Groq
+  // determined this one instead of leaving it permanently ungraded.
+  graded_by?: "dataset" | "ai_inferred" | null;
   weak_topics_flagged?: string[];
   detail?: string;
 }

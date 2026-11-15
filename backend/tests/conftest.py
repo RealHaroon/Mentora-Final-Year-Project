@@ -115,13 +115,25 @@ def _seed_minimal_data(session):
             question_id=1, subject="Mathematics", topic="Algebra", subtopic="Quadratic Equations",
             difficulty="medium", question_text="Solve x^2 - 5x + 6 = 0. What are the roots?",
             options={"A": "x = 2, 3", "B": "x = -2, 3", "C": "x = 1, 6", "D": "x = -1, -6"},
-            correct_answer="A", source="test fixture",
+            correct_answer="A", correct_answer_source="dataset", source="test fixture",
         ),
         Question(
             question_id=2, subject="Mathematics", topic="Geometry and Trigonometry", subtopic="Triangles",
             difficulty="easy", question_text="A triangle has angles of 50 and 70 degrees. Find the third angle.",
             options={"A": "50", "B": "60", "C": "70", "D": "80"},
-            correct_answer="B", source="test fixture",
+            correct_answer="B", correct_answer_source="dataset", source="test fixture",
+        ),
+        # No correct_answer — matches the real shape of the 1777 MDCAT-
+        # sourced rows (see mentora_data/SOURCES.md): a real question/
+        # options pair with no labeled answer key. Deliberately
+        # unambiguous so Groq's AI-grading (routers/exam.py's
+        # _determine_correct_answer) has a reliably correct answer to test
+        # against, not a borderline/debatable one.
+        Question(
+            question_id=3, subject="Biology", topic="General Biology", subtopic="Cell Biology",
+            difficulty="easy", question_text="Which organelle is known as the powerhouse of the cell?",
+            options={"A": "Nucleus", "B": "Mitochondria", "C": "Ribosome", "D": "Golgi apparatus"},
+            correct_answer="", source="test fixture",
         ),
     ]
     session.add_all(questions)

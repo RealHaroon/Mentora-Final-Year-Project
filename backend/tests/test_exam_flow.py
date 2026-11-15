@@ -59,4 +59,31 @@ def test_mcq_submit_correct_answer_does_not_flag_anything(client):
     assert submit.status_code == 200
     body = submit.json()
     assert body["correct"] is True
+    assert body["graded_by"] == "dataset"
     assert body["weak_topics_flagged"] == []
+
+
+def test_mcq_with_no_answer_key_is_graded_by_ai(client, db_session):
+    # 2026-11-15 — question_id 3 (conftest.py) has no correct_answer at
+    # all, matching the real shape of 1777 of the seeded question bank's
+    # 2155 rows. Real Groq call (see test_rag_graceful_degradation.py for
+    # the monkeypatched-failure counterpart) — deliberately unambiguous
+    # question so this is a reliable assertion, not a flaky one.
+    reg = _register(client, "exam-flow-ai-graded@example.com")
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    submit = client.post("/exam/mcq/submit", json={"question_id": "3", "answer": "B"}, headers=headers)
+    assert submit.status_code == 200
+    body = submit.json()
+    assert body["correct"] is True
+    assert body["correct_answer"] == "B"
+    assert body["graded_by"] == "ai_inferred"
+
+    # Persisted on the shared Question row, not just this response —
+    # the next student to get this question should be graded instantly
+    # without another Groq call.
+    from database.models import Question
+    question = db_session.get(Question, 3)
+    assert question.correct_answer == "B"
+    assert question.correct_answer_source == "ai_inferred"

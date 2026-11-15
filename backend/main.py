@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 
 from config import settings
 from database import models  # noqa: F401 — registers models on Base before create_all
-from database.session import Base, engine, run_additive_migrations
+from database.session import Base, backfill_question_answer_sources, engine, run_additive_migrations
 from ml_core.model_manager import ModelManager
 from ml_core.registry import build_model_registry
 from routers import auth, career, dashboard, exam, interview, learning, notifications, users
@@ -28,6 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     run_additive_migrations()
+    backfill_question_answer_sources()
 
     manager = ModelManager(models=build_model_registry())
     await manager.startup()

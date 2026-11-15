@@ -498,6 +498,11 @@ export default function ExamPrepPage() {
                         : mcqResult.correct
                           ? "Correct!"
                           : `Not quite — the correct answer is ${mcqResult.correct_answer}.`}
+                      {mcqResult.graded_by === "ai_inferred" && (
+                        <span className="small-muted" style={{ display: "block", marginTop: 4 }}>
+                          This question has no official answer key on file — graded by AI.
+                        </span>
+                      )}
                       {mcqResult.weak_topics_flagged && mcqResult.weak_topics_flagged.length > 0 && (
                         <>
                           {" "}

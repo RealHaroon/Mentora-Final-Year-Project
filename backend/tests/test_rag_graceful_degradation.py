@@ -55,6 +55,25 @@ def test_interview_start_returns_503_and_creates_no_partial_session(client, db_s
     assert db_session.query(InterviewSession).count() == before
 
 
+def test_mcq_submit_ai_grading_degrades_gracefully_on_groq_failure(client, monkeypatch):
+    # Different shape from the other tests here on purpose: unlike the
+    # other RAG endpoints, /exam/mcq/submit is NOT Groq-dependent for most
+    # questions (only the ones with no real answer key at all — see
+    # test_mcq_with_no_answer_key_is_graded_by_ai in test_exam_flow.py), so
+    # a Groq outage degrades to a 200 with an honest "can't grade this one
+    # right now" rather than a hard 503 for an endpoint that mostly doesn't
+    # need Groq at all.
+    headers = _register(client, "degrade-mcq@example.com")
+    monkeypatch.setattr(exam._exam_rag, "llm", ChatGroq(**BAD_LLM_KWARGS))
+
+    r = client.post("/exam/mcq/submit", headers=headers, json={"question_id": "3", "answer": "B"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["correct"] is None
+    assert body["graded_by"] is None
+    assert "couldn't determine" in body["detail"].lower()
+
+
 def test_interview_ask_returns_503_and_does_not_lose_the_students_answer(client, db_session, monkeypatch):
     headers = _register(client, "degrade-interview-ask@example.com")
     start = client.post("/interview/start", headers=headers, params={"career_goal": "ml_engineer"})
