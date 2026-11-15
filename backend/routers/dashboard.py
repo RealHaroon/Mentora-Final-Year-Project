@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database.models import CareerProfile, CareerRanking, ExamSession, TopicScore, User, utcnow
+from database.models import CareerProfile, CareerRanking, ExamSession, TopicScore, User, WatchHistoryEntry, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
 from routers.exam import _build_week, _days_to_exam, _get_prefs
@@ -48,16 +48,23 @@ def get_stats(db: Session = Depends(get_db), user: User = Depends(get_current_us
             "fit_percent": round(top_ranking.match_score),
         }
 
+    # 2026-11-15 — was hardcoded to 0 from a comment claiming watch-history
+    # was still an in-memory, non-per-user list; that was fixed back on
+    # 2026-11-12 (see routers/learning.py's own header comment) but this
+    # call site was never updated to match.
+    watch_count = db.query(WatchHistoryEntry).filter(WatchHistoryEntry.user_id == user.user_id).count()
+    watch_count_this_week = (
+        db.query(WatchHistoryEntry)
+        .filter(WatchHistoryEntry.user_id == user.user_id, WatchHistoryEntry.watched_at >= week_ago)
+        .count()
+    )
+
     return {
         "exam_sessions": len(sessions),
         "avg_score": avg_score,
         "avg_score_delta": avg_score_delta,
-        # Still mock — videos_in_playlist/watch-history (backend/routers/
-        # learning.py) are in-memory and not scoped per user at all, so
-        # there's no real per-user count to report yet. See that file's
-        # header comment and docs/phase10/viva_question_bank.md.
-        "videos_watched": 0,
-        "videos_watched_this_week": 0,
+        "videos_watched": watch_count,
+        "videos_watched_this_week": watch_count_this_week,
         "top_career_match": top_career_match,
     }
 
