@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { PlaylistVideo } from "@/lib/types";
 
@@ -15,6 +15,7 @@ export default function PlaylistSection({
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [adding, setAdding] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
 
   async function handleRemove(title: string) {
     const previous = videos;
@@ -27,18 +28,42 @@ export default function PlaylistSection({
     }
   }
 
-  async function handleWatch(video: PlaylistVideo) {
-    window.open(video.video_url, "_blank", "noopener,noreferrer");
+  async function logWatch(title: string, subject: string) {
     try {
       await apiFetch("/learning/watch-history", {
         method: "POST",
-        body: JSON.stringify({ title: video.title, subject: video.subject }),
+        body: JSON.stringify({ title, subject }),
       });
       window.dispatchEvent(new Event("mentora:watch-logged"));
     } catch {
       // Watch history is non-critical — the video still opened either way.
     }
   }
+
+  // Found 2026-11-15 testing live, extensively: a React onClick prop on the
+  // SAME <a target="_blank"> that performs the navigation reliably broke the
+  // native new-tab navigation (confirmed directly — the anchor's own default
+  // action silently failed to fire every single time, even though the
+  // handler itself ran correctly and logged watch history), while an
+  // otherwise-identical anchor with no onClick at all, or with a listener
+  // attached via plain addEventListener instead of React's synthetic
+  // onClick, worked. Logging watch history via a native, delegated listener
+  // here instead — attached to the list container, not the anchor itself —
+  // keeps the Watch link a pure, unmodified navigation element, matching
+  // Exam Prep's own already-working "▶ Watch" link exactly.
+  useEffect(() => {
+    const container = listRef.current;
+    if (!container) return;
+    function handleClick(e: MouseEvent) {
+      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>("a.watch-link");
+      if (!link) return;
+      const title = link.dataset.title;
+      const subject = link.dataset.subject;
+      if (title && subject) logWatch(title, subject);
+    }
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, []);
 
   async function handleAddVideo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -152,26 +177,40 @@ export default function PlaylistSection({
 
       {videos.length === 0 && <p className="small-muted">No videos in your playlist yet.</p>}
 
-      {videos.map((video) => (
-        <div className="media-row" key={video.title}>
-          <div className="media-thumb" />
-          <div className="media-info">
-            <h4>{video.title}</h4>
-            <span className="tag-subject">{video.subject}</span>
-            <div className="meta">
-              {video.source} · {video.duration_min} min · {video.note}
+      <div ref={listRef}>
+        {videos.map((video) => (
+          <div className="media-row" key={video.title}>
+            <div className="media-thumb" />
+            <div className="media-info">
+              <h4>{video.title}</h4>
+              <span className="tag-subject">{video.subject}</span>
+              <div className="meta">
+                {video.source} · {video.duration_min} min · {video.note}
+              </div>
+            </div>
+            <div className="media-actions">
+              {/* A plain, unmodified <a target="_blank"> — no onClick on
+                  this element itself (see the useEffect above for why).
+                  data-title/data-subject let the delegated listener on the
+                  container log watch history without touching this anchor's
+                  own default navigation behavior at all. */}
+              <a
+                href={video.video_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="watch-link btn btn-primary btn-sm"
+                data-title={video.title}
+                data-subject={video.subject}
+              >
+                Watch
+              </a>
+              <button className="btn btn-outline btn-sm" onClick={() => handleRemove(video.title)}>
+                Remove
+              </button>
             </div>
           </div>
-          <div className="media-actions">
-            <button className="btn btn-primary btn-sm" onClick={() => handleWatch(video)}>
-              Watch
-            </button>
-            <button className="btn btn-outline btn-sm" onClick={() => handleRemove(video.title)}>
-              Remove
-            </button>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </>
   );
 }

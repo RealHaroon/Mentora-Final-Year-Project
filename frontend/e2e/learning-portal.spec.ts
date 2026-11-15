@@ -61,10 +61,13 @@ test("add a video to the playlist, watch it (logs to watch history), then remove
     .filter({ has: page.getByRole("button", { name: "Remove" }) });
   await expect(playlistRow).toBeVisible({ timeout: 10_000 });
 
-  // "Watch" opens a new tab (window.open) to the REAL link, and logs a
-  // real watch-history entry.
+  // "Watch" is a plain <a target="_blank"> (role "link", not "button" —
+  // found 2026-11-15: a React onClick on this same element broke its own
+  // native new-tab navigation, so logging now happens via a delegated
+  // listener instead; see PlaylistSection.tsx). Opens the REAL link in a
+  // new tab and logs a real watch-history entry.
   const popupPromise = page.waitForEvent("popup");
-  await playlistRow.getByRole("button", { name: "Watch" }).click();
+  await playlistRow.getByRole("link", { name: "Watch" }).click();
   const popup = await popupPromise;
   await expect.poll(() => popup.url()).toBe(realUrl);
   await popup.close();
