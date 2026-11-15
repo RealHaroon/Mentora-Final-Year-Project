@@ -65,7 +65,7 @@ DEMO_WATCH_HISTORY = [
 ]
 
 DEMO_EMAIL = "demo@mentora.pk"
-DEMO_PASSWORD = "MentoraDemo2026!"
+DEMO_PASSWORD = "MentoraDemo2026!@"
 CV_PATH = Path(__file__).resolve().parent / "demo_assets" / "demo_student_cv.txt"
 
 # Last 5 total_score values, oldest first. M3's /dashboard/at-risk-check

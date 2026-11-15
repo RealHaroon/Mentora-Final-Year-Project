@@ -31,7 +31,7 @@ from database.session import SessionLocal  # noqa: E402
 
 BASE_URL = "http://localhost:8000"
 DEFAULT_EMAIL = "demo@mentora.pk"
-DEFAULT_PASSWORD = "MentoraDemo2026!"
+DEFAULT_PASSWORD = "MentoraDemo2026!@"
 CV_FILE = Path(__file__).resolve().parents[1] / "uploads" / "cv" / "54_cv_test.txt"
 
 

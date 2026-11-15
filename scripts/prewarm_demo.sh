@@ -10,7 +10,7 @@ set -e
 
 BASE_URL="${1:-http://localhost:8000}"
 EMAIL="demo@mentora.pk"
-PASSWORD="MentoraDemo2026!"
+PASSWORD="MentoraDemo2026!@"
 
 echo "Logging in as the demo account..."
 TOKEN=$(curl -s -X POST "$BASE_URL/auth/login" -H "Content-Type: application/json" \
