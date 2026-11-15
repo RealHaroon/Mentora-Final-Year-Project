@@ -134,7 +134,7 @@ def seed():
 
         for video in DEMO_PLAYLIST:
             db.add(PlaylistItem(
-                user_id=user.user_id, video_url=_youtube_search_url(video["title"], video["source"]), **video,
+                user_id=user.user_id, video_url=_youtube_search_url(video["title"]), **video,
             ))
 
         for i, (title, subject) in enumerate(DEMO_WATCH_HISTORY):

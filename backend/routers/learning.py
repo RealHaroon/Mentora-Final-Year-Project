@@ -28,10 +28,15 @@ router = APIRouter(prefix="/learning", tags=["learning"])
 # question bank/exam-prep flow) and pdfs_downloaded (no download-event log).
 
 
-def _youtube_search_url(title: str, source: str) -> str:
+def _youtube_search_url(title: str) -> str:
     # No real video hosting exists yet — link somewhere genuinely useful
     # (a real YouTube search for the topic) instead of a dead/fake link.
-    return f"https://www.youtube.com/results?search_query={quote_plus(f'{title} {source}')}"
+    # Used to also fold the video's `source` field (display-only metadata,
+    # e.g. "YouTube search") into the query — every real caller sends
+    # literally "YouTube search" there, so the search was polluted with
+    # those literal words on every single suggested video, app-wide (found
+    # 2026-11-14 while a user noticed the Watch button felt non-functional).
+    return f"https://www.youtube.com/results?search_query={quote_plus(title)}"
 
 
 class PlaylistItemIn(BaseModel):
@@ -111,7 +116,7 @@ def add_to_playlist(payload: PlaylistItemIn, db: Session = Depends(get_db), user
             source=payload.source,
             duration_min=payload.duration_min,
             note="Added manually",
-            video_url=_youtube_search_url(payload.title, payload.source),
+            video_url=_youtube_search_url(payload.title),
         )
         db.add(existing)
         # One of the 4 hardcoded "content_updates" notifications every
