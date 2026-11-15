@@ -7,16 +7,11 @@ from sqlalchemy.orm import Session
 from database.models import CareerProfile, CareerRanking, ExamSession, TopicScore, User, utcnow
 from database.session import get_db
 from ml_core.model_manager import ModelManager
+from routers.exam import _build_week, _days_to_exam, _get_prefs
 from services.auth_service import get_current_user
 from services.notification_service import notify_once
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
-
-# weekly-snapshot and the frontend's whole exam/timetable system are still
-# MOCK (matches MENTORA_Phase2_Frontend_Backend_Wiring.md §1.1) — there's no
-# real "study schedule" concept in the schema yet, and selecting subjects on
-# /exam-prep doesn't change it. Found 2026-11-11 via a user testing their own
-# fresh account and seeing fixed numbers regardless of real activity.
 
 
 @router.get("/stats")
@@ -80,14 +75,28 @@ def get_score_trend(sessions: int = 10, db: Session = Depends(get_db), user: Use
 
 
 @router.get("/weekly-snapshot")
-def get_weekly_snapshot(user: User = Depends(get_current_user)):
+def get_weekly_snapshot(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # 2026-11-15 — this used to be 5 hardcoded days/topics regardless of the
+    # account's real exam_goal, subjects, or deadline, while Exam Prep's own
+    # timetable (same underlying _build_week) was fixed to be real and
+    # adaptive in the same session — the two would have visibly disagreed on
+    # the same real account. Reuses that exact, already-tested logic instead
+    # of a second parallel (and inevitably drifting) implementation. Each
+    # day's single topic/status is the first selected subject's session —
+    # the same "spotlight" simplification /exam/today-topic and /exam/mcq
+    # already use for a one-line summary; the full multi-subject breakdown
+    # lives on /exam-prep itself.
+    prefs = _get_prefs(db, user)
+    week = _build_week(db, user, prefs["subjects"], _days_to_exam(prefs))
     return {
         "days": [
-            {"day": "Mon", "topic": "Algebra", "status": "done"},
-            {"day": "Tue", "topic": "English", "status": "done"},
-            {"day": "Wed", "topic": "Grammar", "status": "today"},
-            {"day": "Thu", "topic": "Geometry", "status": "missed"},
-            {"day": "Fri", "topic": "Revision", "status": "pending"},
+            {
+                "day": row["day"][:3],
+                "topic": row["sessions"][0]["topic"],
+                "status": row["sessions"][0]["status"],
+            }
+            for row in week
+            if row["sessions"]
         ]
     }
 
