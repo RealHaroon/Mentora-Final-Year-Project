@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED = ["/dashboard", "/exam-prep", "/career", "/learning-portal"];
+const PROTECTED = ["/dashboard", "/exam-prep", "/career", "/learning-portal", "/admin"];
 
 export function proxy(request: NextRequest) {
   const session = request.cookies.get("mentora_session")?.value;
@@ -20,5 +20,13 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/exam-prep/:path*", "/career/:path*", "/learning-portal/:path*", "/login", "/register"],
+  matcher: [
+    "/dashboard/:path*",
+    "/exam-prep/:path*",
+    "/career/:path*",
+    "/learning-portal/:path*",
+    "/admin/:path*",
+    "/login",
+    "/register",
+  ],
 };

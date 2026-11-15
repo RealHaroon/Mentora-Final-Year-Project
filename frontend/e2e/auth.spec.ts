@@ -9,6 +9,12 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("logged-out visit to a protected route redirects to /login", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login/);
+
+  // /admin (Manage Topic Videos) was missing from proxy.ts's PROTECTED
+  // list entirely when it was split out of Dashboard Settings 2026-11-15
+  // — found before it shipped, since every other app page redirects here.
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/login/);
 });
 
 test("register creates a real account, logs in, logs out, and logs back in", async ({ page }) => {
