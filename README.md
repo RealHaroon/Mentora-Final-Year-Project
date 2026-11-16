@@ -1,5 +1,7 @@
 # Mentora — Final Year Project
 
+**Status: ✅ Completed — presented.**
+
 An AI-assisted exam-prep and career-guidance platform: a trained-model backend
 (gap classifier, question generator, trajectory predictor, career matcher, CV
 parser) plus a RAG-based chatbot (Groq + ChromaDB) for topic explanations and
@@ -7,6 +9,14 @@ mock interviews. Full phase-by-phase technical history lives in
 `docs/phases/` — this file is just "how do I get it running," consolidated
 from each phase's own setup notes per
 `docs/phases/MENTORA_Phase9_Polish_Demo_Packaging.md` §8.
+
+## Team
+
+- **Muhammad Haroon Abbas** — 2K23/BLCS/38
+- **Raimal Raja** — 2K23/BLCS/49
+
+Supervisor: **Dileep Kumar**
+University of Sindh, Laar Campus, Badin
 
 ## Current state
 
@@ -172,3 +182,7 @@ original plan (e.g. Groq instead of local Ollama in Phase 7). Worth reading
 before assuming the plan is what shipped — including Phases 8-9's own
 backend-only scope decision, which turned out to rest on a wrong premise;
 see `docs/phase10/drift_check.md` for the correction.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
