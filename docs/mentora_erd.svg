@@ -1,0 +1,451 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1610" height="1084" viewBox="0 0 1610 1084">
+<rect x="0" y="0" width="1610" height="1084" fill="white"/>
+<text x="805.0" y="20" font-family="Calibri, Arial, sans-serif" font-size="18" font-weight="bold" fill="#123D2C" text-anchor="middle">Mentora — Entity Relationship Diagram (17 tables)</text>
+<text x="805.0" y="34" font-family="Calibri, Arial, sans-serif" font-size="10" fill="#555555" text-anchor="middle">(the lighter band above the tables is routing space for long cross-group connections — not part of any table)</text>
+<rect x="30" y="84" width="230" height="984" fill="#EEF8F2" opacity="0.5" rx="8"/>
+<text x="145.0" y="100" font-family="Calibri, Arial, sans-serif" font-size="12" font-weight="bold" fill="#555555" text-anchor="middle">CORE</text>
+<rect x="310" y="84" width="210" height="984" fill="#EEF8F2" opacity="0.5" rx="8"/>
+<text x="415.0" y="100" font-family="Calibri, Arial, sans-serif" font-size="12" font-weight="bold" fill="#555555" text-anchor="middle">CAREER COUNSELING</text>
+<rect x="570" y="84" width="210" height="984" fill="#EEF8F2" opacity="0.5" rx="8"/>
+<text x="675.0" y="100" font-family="Calibri, Arial, sans-serif" font-size="12" font-weight="bold" fill="#555555" text-anchor="middle">MOCK INTERVIEW</text>
+<rect x="830" y="84" width="230" height="984" fill="#EEF8F2" opacity="0.5" rx="8"/>
+<text x="945.0" y="100" font-family="Calibri, Arial, sans-serif" font-size="12" font-weight="bold" fill="#555555" text-anchor="middle">EXAM PREP</text>
+<rect x="1110" y="84" width="210" height="984" fill="#EEF8F2" opacity="0.5" rx="8"/>
+<text x="1215.0" y="100" font-family="Calibri, Arial, sans-serif" font-size="12" font-weight="bold" fill="#555555" text-anchor="middle">LEARNING PORTAL</text>
+<rect x="1370" y="84" width="210" height="984" fill="#EEF8F2" opacity="0.5" rx="8"/>
+<text x="1475.0" y="100" font-family="Calibri, Arial, sans-serif" font-size="12" font-weight="bold" fill="#555555" text-anchor="middle">SHARED</text>
+<path d="M 135.0 394 L 135.0 371.0 L 145.0 371.0 L 145.0 348" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="135.0" cy="394" r="3" fill="#888888"/>
+<text x="141.0" y="390" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="151.0" y="358" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 320 393.0 L 285.0 393.0 L 285.0 229.0 L 250 229.0" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="320" cy="393.0" r="3" fill="#888888"/>
+<text x="318" y="387.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">N</text>
+<text x="252" y="223.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">1</text>
+<path d="M 415.0 314 L 415.0 291.0 L 415.0 291.0 L 415.0 268" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="415.0" cy="314" r="3" fill="#888888"/>
+<text x="421.0" y="310" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="421.0" y="278" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 320 607.0 L 285.0 607.0 L 285.0 229.0 L 250 229.0" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="320" cy="607.0" r="3" fill="#888888"/>
+<text x="318" y="601.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">N</text>
+<text x="252" y="223.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">1</text>
+<path d="M 415.0 518 L 415.0 393.0 L 415.0 393.0 L 415.0 268" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="415.0" cy="518" r="3" fill="#888888"/>
+<text x="421.0" y="514" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="421.0" y="278" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 320 821.0 L 285.0 821.0 L 285.0 229.0 L 250 229.0" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="320" cy="821.0" r="3" fill="#888888"/>
+<text x="318" y="815.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">N</text>
+<text x="252" y="223.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">1</text>
+<path d="M 580 179.0 L 574 179.0 L 574 40 L 58 40 L 58 110" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="580" cy="179.0" r="3" fill="#888888"/>
+<text x="585" y="176.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="63" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 580 179.0 L 545.0 179.0 L 545.0 189.0 L 510 189.0" fill="none" stroke="#888888" stroke-width="1.4" stroke-dasharray="5,3"/>
+<circle cx="580" cy="179.0" r="3" fill="#888888"/>
+<text x="578" y="173.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">N</text>
+<text x="512" y="183.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555" text-anchor="middle">1</text>
+<path d="M 675.0 294 L 675.0 271.0 L 675.0 271.0 L 675.0 248" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="675.0" cy="294" r="3" fill="#888888"/>
+<text x="681.0" y="290" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="681.0" y="258" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 840 433.0 L 830 433.0 L 830 45 L 84 45 L 84 110" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="840" cy="433.0" r="3" fill="#888888"/>
+<text x="845" y="430.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="89" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 935.0 558 L 935.0 535.0 L 935.0 535.0 L 935.0 512" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="935.0" cy="558" r="3" fill="#888888"/>
+<text x="941.0" y="554" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="941.0" y="522" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 935.0 558 L 935.0 433.0 L 945.0 433.0 L 945.0 308" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="935.0" cy="558" r="3" fill="#888888"/>
+<text x="941.0" y="554" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="951.0" y="318" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 840 831.0 L 826 831.0 L 826 50 L 110 50 L 110 110" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="840" cy="831.0" r="3" fill="#888888"/>
+<text x="845" y="828.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="115" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 1120 179.0 L 1102 179.0 L 1102 55 L 136 55 L 136 110" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="1120" cy="179.0" r="3" fill="#888888"/>
+<text x="1125" y="176.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="141" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 1120 353.0 L 1098 353.0 L 1098 60 L 162 60 L 162 110" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="1120" cy="353.0" r="3" fill="#888888"/>
+<text x="1125" y="350.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="167" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 1120 517.0 L 1114 517.0 L 1114 65 L 188 65 L 188 110" fill="none" stroke="#888888" stroke-width="1.4" stroke-dasharray="5,3"/>
+<circle cx="1120" cy="517.0" r="3" fill="#888888"/>
+<text x="1125" y="514.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="193" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<path d="M 1380 179.0 L 1370 179.0 L 1370 70 L 214 70 L 214 110" fill="none" stroke="#888888" stroke-width="1.4"/>
+<circle cx="1380" cy="179.0" r="3" fill="#888888"/>
+<text x="1385" y="176.0" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">N</text>
+<text x="219" y="121" font-family="Calibri, Arial, sans-serif" font-size="9" fill="#555555">1</text>
+<rect x="40" y="110" width="210" height="238" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="40" y="110" width="210" height="28" fill="#123D2C" rx="4"/>
+<rect x="40" y="132" width="210" height="6" fill="#123D2C"/>
+<text x="145.0" y="129.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">users</text>
+<line x1="40" y1="138" x2="250" y2="138" stroke="#222222" stroke-width="1"/>
+<text x="48" y="152" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">user_id (PK)</text>
+<text x="242" y="152" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="40" y1="158" x2="250" y2="158" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="172" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">first_name</text>
+<text x="242" y="172" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(80)</text>
+<line x1="40" y1="178" x2="250" y2="178" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="192" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">last_name</text>
+<text x="242" y="192" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(80)</text>
+<line x1="40" y1="198" x2="250" y2="198" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="212" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">email</text>
+<text x="242" y="212" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="40" y1="218" x2="250" y2="218" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="232" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">password_hash</text>
+<text x="242" y="232" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="40" y1="238" x2="250" y2="238" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="252" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">university</text>
+<text x="242" y="252" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="40" y1="258" x2="250" y2="258" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="272" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">exam_goal</text>
+<text x="242" y="272" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(50)</text>
+<line x1="40" y1="278" x2="250" y2="278" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="292" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">created_at</text>
+<text x="242" y="292" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<line x1="40" y1="298" x2="250" y2="298" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="312" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">reset_code</text>
+<text x="242" y="312" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(6)</text>
+<line x1="40" y1="318" x2="250" y2="318" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="332" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">notification_prefs</text>
+<text x="242" y="332" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<rect x="40" y="394" width="190" height="178" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="40" y="394" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="40" y="416" width="190" height="6" fill="#1A5C42"/>
+<text x="135.0" y="413.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">student_intelligence_profile</text>
+<line x1="40" y1="422" x2="230" y2="422" stroke="#222222" stroke-width="1"/>
+<text x="48" y="436" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">sip_id (PK)</text>
+<text x="222" y="436" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="40" y1="442" x2="230" y2="442" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="456" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="222" y="456" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="40" y1="462" x2="230" y2="462" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="476" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">skill_vector</text>
+<text x="222" y="476" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="40" y1="482" x2="230" y2="482" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="496" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">career_rankings</text>
+<text x="222" y="496" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="40" y1="502" x2="230" y2="502" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="516" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">priority_queue</text>
+<text x="222" y="516" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="40" y1="522" x2="230" y2="522" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="536" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">roadmap</text>
+<text x="222" y="536" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="40" y1="542" x2="230" y2="542" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="48" y="556" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">updated_at</text>
+<text x="222" y="556" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<rect x="320" y="110" width="190" height="158" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="320" y="110" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="320" y="132" width="190" height="6" fill="#1A5C42"/>
+<text x="415.0" y="129.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">career_profiles</text>
+<line x1="320" y1="138" x2="510" y2="138" stroke="#222222" stroke-width="1"/>
+<text x="328" y="152" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">career_id (PK)</text>
+<text x="502" y="152" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="158" x2="510" y2="158" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="172" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">title</text>
+<text x="502" y="172" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(150)</text>
+<line x1="320" y1="178" x2="510" y2="178" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="192" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">description</text>
+<text x="502" y="192" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<line x1="320" y1="198" x2="510" y2="198" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="212" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">required_skills</text>
+<text x="502" y="212" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="320" y1="218" x2="510" y2="218" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="232" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">onet_code</text>
+<text x="502" y="232" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(20)</text>
+<line x1="320" y1="238" x2="510" y2="238" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="252" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">category</text>
+<text x="502" y="252" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(100)</text>
+<rect x="320" y="314" width="190" height="158" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="320" y="314" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="320" y="336" width="190" height="6" fill="#1A5C42"/>
+<text x="415.0" y="333.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">career_rankings</text>
+<line x1="320" y1="342" x2="510" y2="342" stroke="#222222" stroke-width="1"/>
+<text x="328" y="356" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">ranking_id (PK)</text>
+<text x="502" y="356" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="362" x2="510" y2="362" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="376" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="502" y="376" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="382" x2="510" y2="382" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="396" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">career_id (FK)</text>
+<text x="502" y="396" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="402" x2="510" y2="402" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="416" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">match_score</text>
+<text x="502" y="416" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">FLOAT</text>
+<line x1="320" y1="422" x2="510" y2="422" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="436" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">key_skill_gap</text>
+<text x="502" y="436" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="320" y1="442" x2="510" y2="442" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="456" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">ranked_at</text>
+<text x="502" y="456" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<rect x="320" y="518" width="190" height="178" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="320" y="518" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="320" y="540" width="190" height="6" fill="#1A5C42"/>
+<text x="415.0" y="537.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">roadmaps</text>
+<line x1="320" y1="546" x2="510" y2="546" stroke="#222222" stroke-width="1"/>
+<text x="328" y="560" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">roadmap_id (PK)</text>
+<text x="502" y="560" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="566" x2="510" y2="566" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="580" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="502" y="580" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="586" x2="510" y2="586" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="600" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">career_id (FK)</text>
+<text x="502" y="600" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="606" x2="510" y2="606" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="620" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">month_number</text>
+<text x="502" y="620" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(10)</text>
+<line x1="320" y1="626" x2="510" y2="626" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="640" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">milestone_title</text>
+<text x="502" y="640" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="320" y1="646" x2="510" y2="646" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="660" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">status</text>
+<text x="502" y="660" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(20)</text>
+<line x1="320" y1="666" x2="510" y2="666" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="680" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">explanation</text>
+<text x="502" y="680" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<rect x="320" y="742" width="190" height="158" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="320" y="742" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="320" y="764" width="190" height="6" fill="#1A5C42"/>
+<text x="415.0" y="761.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">cv_uploads</text>
+<line x1="320" y1="770" x2="510" y2="770" stroke="#222222" stroke-width="1"/>
+<text x="328" y="784" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">cv_id (PK)</text>
+<text x="502" y="784" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="790" x2="510" y2="790" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="804" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="502" y="804" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="320" y1="810" x2="510" y2="810" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="824" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">file_path</text>
+<text x="502" y="824" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(500)</text>
+<line x1="320" y1="830" x2="510" y2="830" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="844" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">extracted_skills</text>
+<text x="502" y="844" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="320" y1="850" x2="510" y2="850" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="864" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">gpa</text>
+<text x="502" y="864" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">FLOAT</text>
+<line x1="320" y1="870" x2="510" y2="870" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="328" y="884" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">certifications</text>
+<text x="502" y="884" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<rect x="580" y="110" width="190" height="138" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="580" y="110" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="580" y="132" width="190" height="6" fill="#1A5C42"/>
+<text x="675.0" y="129.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">interview_sessions</text>
+<line x1="580" y1="138" x2="770" y2="138" stroke="#222222" stroke-width="1"/>
+<text x="588" y="152" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">interview_id (PK)</text>
+<text x="762" y="152" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="580" y1="158" x2="770" y2="158" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="172" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="762" y="172" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="580" y1="178" x2="770" y2="178" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="192" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">career_id (FK, null)</text>
+<text x="762" y="192" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="580" y1="198" x2="770" y2="198" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="212" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">started_at</text>
+<text x="762" y="212" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<line x1="580" y1="218" x2="770" y2="218" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="232" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">ended_at</text>
+<text x="762" y="232" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<rect x="580" y="294" width="190" height="138" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="580" y="294" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="580" y="316" width="190" height="6" fill="#1A5C42"/>
+<text x="675.0" y="313.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">interview_qa</text>
+<line x1="580" y1="322" x2="770" y2="322" stroke="#222222" stroke-width="1"/>
+<text x="588" y="336" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">qa_id (PK)</text>
+<text x="762" y="336" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="580" y1="342" x2="770" y2="342" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="356" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">interview_id (FK)</text>
+<text x="762" y="356" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="580" y1="362" x2="770" y2="362" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="376" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">question_text</text>
+<text x="762" y="376" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<line x1="580" y1="382" x2="770" y2="382" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="396" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">student_answer</text>
+<text x="762" y="396" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<line x1="580" y1="402" x2="770" y2="402" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="588" y="416" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">ai_feedback</text>
+<text x="762" y="416" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<rect x="840" y="110" width="210" height="198" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="840" y="110" width="210" height="28" fill="#1A5C42" rx="4"/>
+<rect x="840" y="132" width="210" height="6" fill="#1A5C42"/>
+<text x="945.0" y="129.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">questions</text>
+<line x1="840" y1="138" x2="1050" y2="138" stroke="#222222" stroke-width="1"/>
+<text x="848" y="152" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">question_id (PK)</text>
+<text x="1042" y="152" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="158" x2="1050" y2="158" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="172" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">subject</text>
+<text x="1042" y="172" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(100)</text>
+<line x1="840" y1="178" x2="1050" y2="178" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="192" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">topic</text>
+<text x="1042" y="192" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(150)</text>
+<line x1="840" y1="198" x2="1050" y2="198" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="212" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">difficulty</text>
+<text x="1042" y="212" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(20)</text>
+<line x1="840" y1="218" x2="1050" y2="218" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="232" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">question_text</text>
+<text x="1042" y="232" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<line x1="840" y1="238" x2="1050" y2="238" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="252" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">options</text>
+<text x="1042" y="252" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">JSON</text>
+<line x1="840" y1="258" x2="1050" y2="258" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="272" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">correct_answer</text>
+<text x="1042" y="272" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(10)</text>
+<line x1="840" y1="278" x2="1050" y2="278" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="292" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">correct_answer_source</text>
+<text x="1042" y="292" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(20)</text>
+<rect x="840" y="354" width="190" height="158" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="840" y="354" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="840" y="376" width="190" height="6" fill="#1A5C42"/>
+<text x="935.0" y="373.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">exam_sessions</text>
+<line x1="840" y1="382" x2="1030" y2="382" stroke="#222222" stroke-width="1"/>
+<text x="848" y="396" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">session_id (PK)</text>
+<text x="1022" y="396" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="402" x2="1030" y2="402" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="416" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="1022" y="416" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="422" x2="1030" y2="422" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="436" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">exam_type</text>
+<text x="1022" y="436" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(50)</text>
+<line x1="840" y1="442" x2="1030" y2="442" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="456" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">subject</text>
+<text x="1022" y="456" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(100)</text>
+<line x1="840" y1="462" x2="1030" y2="462" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="476" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">start_time</text>
+<text x="1022" y="476" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<line x1="840" y1="482" x2="1030" y2="482" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="496" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">total_score</text>
+<text x="1022" y="496" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">FLOAT</text>
+<rect x="840" y="558" width="190" height="158" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="840" y="558" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="840" y="580" width="190" height="6" fill="#1A5C42"/>
+<text x="935.0" y="577.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">session_answers</text>
+<line x1="840" y1="586" x2="1030" y2="586" stroke="#222222" stroke-width="1"/>
+<text x="848" y="600" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">answer_id (PK)</text>
+<text x="1022" y="600" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="606" x2="1030" y2="606" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="620" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">session_id (FK)</text>
+<text x="1022" y="620" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="626" x2="1030" y2="626" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="640" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">question_id (FK)</text>
+<text x="1022" y="640" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="646" x2="1030" y2="646" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="660" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">student_answer</text>
+<text x="1022" y="660" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(10)</text>
+<line x1="840" y1="666" x2="1030" y2="666" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="680" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">is_correct</text>
+<text x="1022" y="680" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">BOOLEAN</text>
+<line x1="840" y1="686" x2="1030" y2="686" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="700" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">time_taken_sec</text>
+<text x="1022" y="700" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<rect x="840" y="762" width="190" height="138" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="840" y="762" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="840" y="784" width="190" height="6" fill="#1A5C42"/>
+<text x="935.0" y="781.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">topic_scores</text>
+<line x1="840" y1="790" x2="1030" y2="790" stroke="#222222" stroke-width="1"/>
+<text x="848" y="804" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">topic_score_id (PK)</text>
+<text x="1022" y="804" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="810" x2="1030" y2="810" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="824" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="1022" y="824" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="840" y1="830" x2="1030" y2="830" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="844" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">subject</text>
+<text x="1022" y="844" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(100)</text>
+<line x1="840" y1="850" x2="1030" y2="850" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="864" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">topic</text>
+<text x="1022" y="864" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(150)</text>
+<line x1="840" y1="870" x2="1030" y2="870" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="884" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">score</text>
+<text x="1022" y="884" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">FLOAT</text>
+<rect x="840" y="946" width="190" height="98" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="840" y="946" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="840" y="968" width="190" height="6" fill="#1A5C42"/>
+<text x="935.0" y="965.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">topic_videos</text>
+<line x1="840" y1="974" x2="1030" y2="974" stroke="#222222" stroke-width="1"/>
+<text x="848" y="988" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">topic (PK)</text>
+<text x="1022" y="988" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(150)</text>
+<line x1="840" y1="994" x2="1030" y2="994" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="1008" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">video_url</text>
+<text x="1022" y="1008" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(500)</text>
+<line x1="840" y1="1014" x2="1030" y2="1014" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="848" y="1028" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">title</text>
+<text x="1022" y="1028" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<rect x="1120" y="110" width="190" height="138" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="1120" y="110" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="1120" y="132" width="190" height="6" fill="#1A5C42"/>
+<text x="1215.0" y="129.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">playlist_items</text>
+<line x1="1120" y1="138" x2="1310" y2="138" stroke="#222222" stroke-width="1"/>
+<text x="1128" y="152" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">item_id (PK)</text>
+<text x="1302" y="152" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1120" y1="158" x2="1310" y2="158" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="172" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="1302" y="172" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1120" y1="178" x2="1310" y2="178" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="192" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">title</text>
+<text x="1302" y="192" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="1120" y1="198" x2="1310" y2="198" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="212" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">subject</text>
+<text x="1302" y="212" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(100)</text>
+<line x1="1120" y1="218" x2="1310" y2="218" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="232" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">video_url</text>
+<text x="1302" y="232" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(500)</text>
+<rect x="1120" y="294" width="190" height="118" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="1120" y="294" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="1120" y="316" width="190" height="6" fill="#1A5C42"/>
+<text x="1215.0" y="313.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">watch_history</text>
+<line x1="1120" y1="322" x2="1310" y2="322" stroke="#222222" stroke-width="1"/>
+<text x="1128" y="336" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">watch_id (PK)</text>
+<text x="1302" y="336" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1120" y1="342" x2="1310" y2="342" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="356" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="1302" y="356" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1120" y1="362" x2="1310" y2="362" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="376" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">title</text>
+<text x="1302" y="376" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="1120" y1="382" x2="1310" y2="382" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="396" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">watched_at</text>
+<text x="1302" y="396" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">DATETIME</text>
+<rect x="1120" y="458" width="190" height="118" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="1120" y="458" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="1120" y="480" width="190" height="6" fill="#1A5C42"/>
+<text x="1215.0" y="477.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">materials</text>
+<line x1="1120" y1="486" x2="1310" y2="486" stroke="#222222" stroke-width="1"/>
+<text x="1128" y="500" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">material_id (PK)</text>
+<text x="1302" y="500" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1120" y1="506" x2="1310" y2="506" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="520" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">owner_user_id (FK, null)</text>
+<text x="1302" y="520" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1120" y1="526" x2="1310" y2="526" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="540" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">title</text>
+<text x="1302" y="540" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(255)</text>
+<line x1="1120" y1="546" x2="1310" y2="546" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1128" y="560" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">size_label</text>
+<text x="1302" y="560" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(50)</text>
+<rect x="1380" y="110" width="190" height="138" fill="white" stroke="#222222" stroke-width="1.3" rx="4"/>
+<rect x="1380" y="110" width="190" height="28" fill="#1A5C42" rx="4"/>
+<rect x="1380" y="132" width="190" height="6" fill="#1A5C42"/>
+<text x="1475.0" y="129.0" font-family="Calibri, Arial, sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">notifications</text>
+<line x1="1380" y1="138" x2="1570" y2="138" stroke="#222222" stroke-width="1"/>
+<text x="1388" y="152" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#B8860B">notification_id (PK)</text>
+<text x="1562" y="152" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1380" y1="158" x2="1570" y2="158" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1388" y="172" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1A5C42">user_id (FK)</text>
+<text x="1562" y="172" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">INT</text>
+<line x1="1380" y1="178" x2="1570" y2="178" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1388" y="192" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">message</text>
+<text x="1562" y="192" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">TEXT</text>
+<line x1="1380" y1="198" x2="1570" y2="198" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1388" y="212" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">type</text>
+<text x="1562" y="212" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">VARCHAR(20)</text>
+<line x1="1380" y1="218" x2="1570" y2="218" stroke="#DDDDDD" stroke-width="0.8"/>
+<text x="1388" y="232" font-family="Calibri, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#222222">is_read</text>
+<text x="1562" y="232" font-family="Calibri, Arial, sans-serif" font-size="9.5" fill="#555555" text-anchor="end">BOOLEAN</text>
+<circle cx="46" cy="1060" r="3" fill="#888888"/>
+<text x="56" y="1064" font-family="Calibri, Arial, sans-serif" font-size="10" fill="#555555">1 = one, N = many</text>
+<line x1="230" y1="1060" x2="260" y2="1060" stroke="#888888" stroke-width="1.4" stroke-dasharray="5,3"/>
+<text x="266" y="1064" font-family="Calibri, Arial, sans-serif" font-size="10" fill="#555555">dashed = nullable FK</text>
+</svg>

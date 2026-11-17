@@ -1,0 +1,304 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1340" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#374151"/>
+    </marker>
+    <marker id="arrowDashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0e7490"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1340" fill="#ffffff"/>
+  <text x="800" y="34" text-anchor="middle" font-size="26" font-weight="bold" fill="#111827">Mentora — Complete System Architecture</text>
+  <text x="800" y="56" text-anchor="middle" font-size="13" fill="#6b7280">Frontend → Backend API → Data Layer / AI-Model Layer / RAG-Orchestration Layer</text>
+
+  <!-- ===================== LAYER 1: FRONTEND ===================== -->
+  <rect x="40" y="76" width="1480" height="190" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="56" y="100" font-size="15" font-weight="bold" fill="#1d4ed8">FRONTEND — Next.js 16 (App Router) + TypeScript, React 19</text>
+
+  <!-- 5 page groups -->
+  <g>
+    <rect x="60" y="114" width="190" height="56" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="155" y="135" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1e3a8a">/login /register</text>
+    <text x="155" y="151" text-anchor="middle" font-size="11" fill="#374151">/forgot-password</text>
+    <text x="155" y="165" text-anchor="middle" font-size="10" fill="#6b7280">app/{login,register,forgot-password}/page.tsx</text>
+  </g>
+  <g>
+    <rect x="270" y="114" width="190" height="56" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="365" y="135" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1e3a8a">/exam-prep</text>
+    <text x="365" y="151" text-anchor="middle" font-size="11" fill="#374151">timetable · MCQ · subjects</text>
+    <text x="365" y="165" text-anchor="middle" font-size="10" fill="#6b7280">app/exam-prep/page.tsx</text>
+  </g>
+  <g>
+    <rect x="480" y="114" width="190" height="56" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="575" y="135" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1e3a8a">/career</text>
+    <text x="575" y="151" text-anchor="middle" font-size="11" fill="#374151">CV · rankings · roadmap · interview</text>
+    <text x="575" y="165" text-anchor="middle" font-size="10" fill="#6b7280">app/career/page.tsx</text>
+  </g>
+  <g>
+    <rect x="690" y="114" width="190" height="56" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="785" y="135" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1e3a8a">/learning-portal</text>
+    <text x="785" y="151" text-anchor="middle" font-size="11" fill="#374151">playlist · assignments · materials</text>
+    <text x="785" y="165" text-anchor="middle" font-size="10" fill="#6b7280">app/learning-portal/page.tsx</text>
+  </g>
+  <g>
+    <rect x="900" y="114" width="190" height="56" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="995" y="135" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1e3a8a">/dashboard</text>
+    <text x="995" y="151" text-anchor="middle" font-size="11" fill="#374151">stats · risk check · notifications</text>
+    <text x="995" y="165" text-anchor="middle" font-size="10" fill="#6b7280">app/dashboard/page.tsx</text>
+  </g>
+
+  <!-- shared components -->
+  <g>
+    <rect x="1120" y="114" width="380" height="56" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="1310" y="133" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e3a8a">Shared: components/SiteHeader.tsx, SiteFooter, DashboardSettings</text>
+    <text x="1310" y="150" text-anchor="middle" font-size="10.5" fill="#6b7280">imported by every page above — nav, active-route highlight, logout</text>
+    <text x="1310" y="164" text-anchor="middle" font-size="10.5" fill="#6b7280">lib/types.ts — TS interfaces mirroring every backend response shape</text>
+  </g>
+
+  <!-- auth proxy row -->
+  <rect x="60" y="188" width="1440" height="62" rx="6" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="780" y="208" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1e3a8a">lib/api.ts — the ONLY file that calls fetch() to the backend</text>
+  <text x="780" y="225" text-anchor="middle" font-size="11" fill="#1e3a8a">Client Components → apiFetch() → /api/proxy/[...path] Route Handler (reads httpOnly JWT cookie, attaches Authorization header) → FastAPI</text>
+  <text x="780" y="240" text-anchor="middle" font-size="11" fill="#1e3a8a">Server Components (e.g. dashboard's page()) → apiFetchServer() → reads cookie via next/headers → FastAPI directly, cache: "no-store"</text>
+
+  <line x1="780" y1="250" x2="780" y2="286" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="800" y="272" font-size="10.5" fill="#374151">HTTP / JSON</text>
+
+  <!-- ===================== LAYER 2: BACKEND ===================== -->
+  <rect x="40" y="286" width="1480" height="230" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="56" y="310" font-size="15" font-weight="bold" fill="#15803d">BACKEND — FastAPI + Uvicorn (backend/)</text>
+
+  <rect x="60" y="322" width="300" height="46" rx="6" fill="#ffffff" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="210" y="341" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#14532d">main.py</text>
+  <text x="210" y="357" text-anchor="middle" font-size="10.5" fill="#374151">registers every router · lifespan() builds ModelManager</text>
+
+  <!-- 8 routers -->
+  <g font-size="11.5">
+    <rect x="60" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="145" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">auth.py</text>
+    <text x="145" y="418" text-anchor="middle" font-size="10" fill="#6b7280">register / login</text>
+
+    <rect x="245" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="330" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">users.py</text>
+    <text x="330" y="418" text-anchor="middle" font-size="10" fill="#6b7280">profile · exam_goal</text>
+
+    <rect x="430" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="515" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">exam.py</text>
+    <text x="515" y="418" text-anchor="middle" font-size="10" fill="#6b7280">timetable · MCQ (M1,M2)</text>
+
+    <rect x="615" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="700" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">career.py</text>
+    <text x="700" y="418" text-anchor="middle" font-size="10" fill="#6b7280">CV·rank·roadmap (M4,M5)</text>
+
+    <rect x="800" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="885" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">interview.py</text>
+    <text x="885" y="418" text-anchor="middle" font-size="10" fill="#6b7280">mock interview (RAG)</text>
+
+    <rect x="985" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="1070" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">learning.py</text>
+    <text x="1070" y="418" text-anchor="middle" font-size="10" fill="#6b7280">playlist · materials</text>
+
+    <rect x="1170" y="384" width="170" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="1255" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">dashboard.py</text>
+    <text x="1255" y="418" text-anchor="middle" font-size="10" fill="#6b7280">stats · risk check (M3)</text>
+
+    <rect x="1355" y="384" width="125" height="44" rx="5" fill="#ffffff" stroke="#16a34a"/>
+    <text x="1417" y="403" text-anchor="middle" font-weight="bold" fill="#14532d">notifications.py</text>
+    <text x="1417" y="418" text-anchor="middle" font-size="10" fill="#6b7280">reads Notification</text>
+  </g>
+
+  <rect x="60" y="440" width="1420" height="64" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="780" y="460" text-anchor="middle" font-size="12" font-weight="bold" fill="#14532d">services/ — shared across routers</text>
+  <text x="780" y="477" text-anchor="middle" font-size="10.5" fill="#14532d">auth_service.py (get_current_user, JWT verify) · notification_service.py (notify_once — dedup'd writes used by exam/career/dashboard/learning.py) · rate_limit.py</text>
+  <text x="780" y="493" text-anchor="middle" font-size="10.5" fill="#14532d">schemas/ — Pydantic request/response validation for every router above</text>
+
+  <!-- arrows down from backend into the three sub-layers -->
+  <line x1="300" y1="516" x2="300" y2="556" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="140" y="540" font-size="10.5" fill="#374151">SQLAlchemy (every router)</text>
+
+  <line x1="760" y1="516" x2="760" y2="556" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="640" y="540" font-size="10.5" fill="#374151">ModelManager.infer() — exam/career/dashboard.py</text>
+
+  <line x1="1270" y1="516" x2="1270" y2="556" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1150" y="540" font-size="10.5" fill="#374151">RAGPipeline.answer() — exam/career/interview.py</text>
+
+  <!-- ===================== LAYER 3: three parallel sub-layers ===================== -->
+
+  <!-- DATA LAYER -->
+  <rect x="40" y="556" width="460" height="300" rx="10" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+  <text x="56" y="580" font-size="14" font-weight="bold" fill="#9a3412">DATA LAYER — database/</text>
+
+  <rect x="60" y="594" width="420" height="40" rx="5" fill="#ffffff" stroke="#ea580c"/>
+  <text x="270" y="618" text-anchor="middle" font-size="11.5" fill="#7c2d12">session.py — Engine / SessionLocal / get_db() / run_additive_migrations()</text>
+
+  <rect x="60" y="644" width="420" height="180" rx="5" fill="#ffffff" stroke="#ea580c"/>
+  <text x="270" y="664" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#7c2d12">models.py — 16 SQLAlchemy tables</text>
+  <text x="270" y="682" text-anchor="middle" font-size="10" fill="#374151">users · student_intelligence_profile · exam_sessions</text>
+  <text x="270" y="698" text-anchor="middle" font-size="10" fill="#374151">questions · session_answers · topic_scores</text>
+  <text x="270" y="714" text-anchor="middle" font-size="10" fill="#374151">career_profiles · career_rankings · roadmaps · cv_uploads</text>
+  <text x="270" y="730" text-anchor="middle" font-size="10" fill="#374151">interview_sessions · interview_qa</text>
+  <text x="270" y="746" text-anchor="middle" font-size="10" fill="#374151">notifications · playlist_items · watch_history · materials</text>
+  <text x="270" y="766" text-anchor="middle" font-size="10" fill="#374151">database_url: sqlite:///./mentora.db (dev) — Postgres-ready</text>
+  <text x="270" y="784" text-anchor="middle" font-size="10" fill="#374151">questions seeded from mentora_data/processed/m1 — 2,155 real rows</text>
+  <text x="270" y="800" text-anchor="middle" font-size="10" fill="#374151">career_profiles seeded from scripts/seed_careers.py — 10 careers</text>
+
+  <rect x="60" y="836" width="420" height="40" rx="5" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="270" y="860" text-anchor="middle" font-size="11" font-weight="bold" fill="#7c2d12">uploads/cv/ — stored CV files (career.py's upload_cv)</text>
+
+  <!-- AI MODEL LAYER -->
+  <rect x="540" y="556" width="460" height="300" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+  <text x="556" y="580" font-size="14" font-weight="bold" fill="#5b21b6">AI / MODEL LAYER — ml_core/</text>
+
+  <rect x="560" y="594" width="420" height="42" rx="5" fill="#ffffff" stroke="#7c3aed"/>
+  <text x="770" y="613" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#4c1d95">model_manager.py — ModelManager (singleton)</text>
+  <text x="770" y="628" text-anchor="middle" font-size="9.5" fill="#374151">lazy-load · idle-unload (5 min) · heavy_lock semaphore · asyncio.to_thread</text>
+
+  <g font-size="10.5">
+    <rect x="560" y="648" width="195" height="52" rx="5" fill="#ffffff" stroke="#7c3aed"/>
+    <text x="657" y="666" text-anchor="middle" font-weight="bold" fill="#4c1d95">M1 — Gap Classifier</text>
+    <text x="657" y="680" text-anchor="middle" font-size="9.5" fill="#374151">DeBERTa-v3-base · lazy</text>
+    <text x="657" y="693" text-anchor="middle" font-size="9.5" fill="#374151">F1 micro 0.4691</text>
+
+    <rect x="765" y="648" width="195" height="52" rx="5" fill="#ffffff" stroke="#7c3aed"/>
+    <text x="862" y="666" text-anchor="middle" font-weight="bold" fill="#4c1d95">M2 — Question Gen.</text>
+    <text x="862" y="680" text-anchor="middle" font-size="9.5" fill="#374151">FLAN-T5-Large+LoRA · lazy</text>
+    <text x="862" y="693" text-anchor="middle" font-size="9.5" fill="#374151">BLEU-4 12.13 / ROUGE-L 0.172</text>
+
+    <rect x="560" y="708" width="195" height="52" rx="5" fill="#f3e8ff" stroke="#7c3aed"/>
+    <text x="657" y="726" text-anchor="middle" font-weight="bold" fill="#4c1d95">M3 — Trajectory Pred.</text>
+    <text x="657" y="740" text-anchor="middle" font-size="9.5" fill="#374151">custom LSTM · ALWAYS RESIDENT</text>
+    <text x="657" y="753" text-anchor="middle" font-size="9.5" fill="#374151">MAE ~5.7-5.9</text>
+
+    <rect x="765" y="708" width="195" height="52" rx="5" fill="#f3e8ff" stroke="#7c3aed"/>
+    <text x="862" y="726" text-anchor="middle" font-weight="bold" fill="#4c1d95">M4 — Career Matcher</text>
+    <text x="862" y="740" text-anchor="middle" font-size="9.5" fill="#374151">all-mpnet-base-v2 · ALWAYS RESIDENT</text>
+    <text x="862" y="753" text-anchor="middle" font-size="9.5" fill="#374151">Precision@5 0.779 ✓</text>
+
+    <rect x="662" y="768" width="195" height="52" rx="5" fill="#ffffff" stroke="#7c3aed"/>
+    <text x="759" y="786" text-anchor="middle" font-weight="bold" fill="#4c1d95">M5 — CV NER Extractor</text>
+    <text x="759" y="800" text-anchor="middle" font-size="9.5" fill="#374151">bert-base-uncased · lazy</text>
+    <text x="759" y="813" text-anchor="middle" font-size="9.5" fill="#374151">Entity F1 0.9497*</text>
+  </g>
+
+  <rect x="560" y="836" width="420" height="40" rx="5" fill="#ddd6fe" stroke="#7c3aed"/>
+  <text x="770" y="860" text-anchor="middle" font-size="10.5" fill="#4c1d95">ml_core/registry.py builds this registry once at startup from ml_models/saved/</text>
+
+  <!-- RAG / EXTERNAL LAYER -->
+  <rect x="1040" y="556" width="480" height="300" rx="10" fill="#cffafe" stroke="#0891b2" stroke-width="2"/>
+  <text x="1056" y="580" font-size="14" font-weight="bold" fill="#155e75">RAG ORCHESTRATION — rag_core/</text>
+
+  <rect x="1060" y="594" width="440" height="40" rx="5" fill="#ffffff" stroke="#0891b2"/>
+  <text x="1280" y="618" text-anchor="middle" font-size="11.5" fill="#164e63">pipeline.py — RAGPipeline (abstract): retrieve() + agenerate()</text>
+
+  <g font-size="10.5">
+    <rect x="1060" y="644" width="135" height="50" rx="5" fill="#ffffff" stroke="#0891b2"/>
+    <text x="1127" y="662" text-anchor="middle" font-weight="bold" fill="#164e63">ExamRAG</text>
+    <text x="1127" y="677" text-anchor="middle" font-size="9.5" fill="#374151">topic explainer</text>
+    <text x="1127" y="689" text-anchor="middle" font-size="9.5" fill="#374151">exam_kb</text>
+
+    <rect x="1205" y="644" width="135" height="50" rx="5" fill="#ffffff" stroke="#0891b2"/>
+    <text x="1272" y="662" text-anchor="middle" font-weight="bold" fill="#164e63">CareerRAG</text>
+    <text x="1272" y="677" text-anchor="middle" font-size="9.5" fill="#374151">Q&amp;A + roadmap</text>
+    <text x="1272" y="689" text-anchor="middle" font-size="9.5" fill="#374151">career_kb</text>
+
+    <rect x="1350" y="644" width="150" height="50" rx="5" fill="#ffffff" stroke="#0891b2"/>
+    <text x="1425" y="662" text-anchor="middle" font-weight="bold" fill="#164e63">InterviewRAG</text>
+    <text x="1425" y="677" text-anchor="middle" font-size="9.5" fill="#374151">mock interview (history)</text>
+    <text x="1425" y="689" text-anchor="middle" font-size="9.5" fill="#374151">interview_kb</text>
+  </g>
+
+  <line x1="1280" y1="694" x2="1280" y2="724" stroke="#374151" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="1060" y="724" width="440" height="40" rx="5" fill="#a5f3fc" stroke="#0891b2"/>
+  <text x="1280" y="748" text-anchor="middle" font-size="11" fill="#164e63">ChromaDB — vector_store/ (local, on-disk: exam_kb / career_kb / interview_kb)</text>
+  <text x="1280" y="700" text-anchor="middle" font-size="9.5" fill="#374151">retrieve() — local, CPU-bound</text>
+
+  <line x1="1280" y1="764" x2="1280" y2="800" stroke="#0e7490" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowDashed)"/>
+  <text x="1300" y="786" font-size="9.5" fill="#0e7490">agenerate() — cloud HTTP</text>
+  <rect x="1060" y="800" width="440" height="48" rx="5" fill="#ffffff" stroke="#0891b2" stroke-dasharray="6,3"/>
+  <text x="1280" y="820" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#164e63">Groq API (external, cloud) — model: openai/gpt-oss-120b</text>
+  <text x="1280" y="836" text-anchor="middle" font-size="10" fill="#374151">via langchain_groq.ChatGroq.ainvoke() — not serialized behind heavy_lock</text>
+
+  <!-- notes box -->
+  <rect x="1060" y="856" width="440" height="20" rx="4" fill="#ecfeff"/>
+  <text x="1280" y="870" text-anchor="middle" font-size="9.5" fill="#0e7490">RAGUnavailableError on any Groq failure → graceful "temporarily unavailable" response</text>
+
+  <!-- ===================== PIPELINES / DATASETS FOOTER ===================== -->
+  <rect x="40" y="896" width="1480" height="210" rx="10" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+  <text x="56" y="920" font-size="14" font-weight="bold" fill="#374151">OFFLINE PIPELINES (run before the live system above exists)</text>
+
+  <g font-size="10.5">
+    <rect x="60" y="934" width="340" height="150" rx="5" fill="#ffffff" stroke="#6b7280"/>
+    <text x="230" y="954" text-anchor="middle" font-weight="bold" fill="#111827">1. Dataset build (datasets/)</text>
+    <text x="230" y="972" text-anchor="middle" font-size="9.5" fill="#374151">23 real Sindh MDCAT papers (OCR)</text>
+    <text x="230" y="986" text-anchor="middle" font-size="9.5" fill="#374151">Kaggle: college-readiness-math</text>
+    <text x="230" y="1000" text-anchor="middle" font-size="9.5" fill="#374151">O*NET 31.0 (career profiles)</text>
+    <text x="230" y="1014" text-anchor="middle" font-size="9.5" fill="#374151">Kaggle: job-descriptions-2025</text>
+    <text x="230" y="1028" text-anchor="middle" font-size="9.5" fill="#374151">Kaggle: updated-resume-dataset</text>
+    <text x="230" y="1042" text-anchor="middle" font-size="9.5" fill="#374151">synthetic (M3 trajectories)</text>
+    <text x="230" y="1060" text-anchor="middle" font-size="9.5" fill="#6b7280">→ mentora_data/processed · labeled</text>
+    <text x="230" y="1074" text-anchor="middle" font-size="9.5" fill="#374151">(arrow →)</text>
+
+    <rect x="420" y="934" width="340" height="150" rx="5" fill="#ffffff" stroke="#6b7280"/>
+    <text x="590" y="954" text-anchor="middle" font-weight="bold" fill="#111827">2. Training (notebooks/, Colab T4 GPU)</text>
+    <text x="590" y="972" text-anchor="middle" font-size="9.5" fill="#374151">train_m1.ipynb → DeBERTa fine-tune</text>
+    <text x="590" y="986" text-anchor="middle" font-size="9.5" fill="#374151">train_m2.ipynb → FLAN-T5 + LoRA (PEFT)</text>
+    <text x="590" y="1000" text-anchor="middle" font-size="9.5" fill="#374151">train_m3.ipynb → LSTM from scratch</text>
+    <text x="590" y="1014" text-anchor="middle" font-size="9.5" fill="#374151">train_m4.ipynb → Sentence-Transformers</text>
+    <text x="590" y="1028" text-anchor="middle" font-size="9.5" fill="#374151">train_m5.ipynb → BERT token classifier</text>
+    <text x="590" y="1046" text-anchor="middle" font-size="9.5" fill="#6b7280">results → experiment_log.md</text>
+    <text x="590" y="1060" text-anchor="middle" font-size="9.5" fill="#6b7280">→ mentora_models/ (raw checkpoints)</text>
+    <text x="590" y="1074" text-anchor="middle" font-size="9.5" fill="#374151">(arrow →)</text>
+
+    <rect x="780" y="934" width="340" height="150" rx="5" fill="#ffffff" stroke="#6b7280"/>
+    <text x="950" y="954" text-anchor="middle" font-weight="bold" fill="#111827">3. Export &amp; quantize (scripts/phase5/)</text>
+    <text x="950" y="972" text-anchor="middle" font-size="9.5" fill="#374151">quantize_m1.py, m2, m5 → fp16 cast</text>
+    <text x="950" y="986" text-anchor="middle" font-size="9.5" fill="#374151">(INT8 dynamic quant tried first —</text>
+    <text x="950" y="1000" text-anchor="middle" font-size="9.5" fill="#374151">found degenerate/broken output,</text>
+    <text x="950" y="1014" text-anchor="middle" font-size="9.5" fill="#374151">switched to fp16 — see §5)</text>
+    <text x="950" y="1032" text-anchor="middle" font-size="9.5" fill="#374151">parity check vs. FP32 on real examples</text>
+    <text x="950" y="1046" text-anchor="middle" font-size="9.5" fill="#374151">benchmark_and_smoke_test.py</text>
+    <text x="950" y="1060" text-anchor="middle" font-size="9.5" fill="#6b7280">→ ml_models/saved/ (what runs live)</text>
+    <text x="950" y="1074" text-anchor="middle" font-size="9.5" fill="#374151">(arrow →)</text>
+
+    <rect x="1140" y="934" width="340" height="150" rx="5" fill="#ffffff" stroke="#6b7280"/>
+    <text x="1310" y="954" text-anchor="middle" font-weight="bold" fill="#111827">4. RAG ingestion (rag_pipelines/)</text>
+    <text x="1310" y="972" text-anchor="middle" font-size="9.5" fill="#374151">exam_rag/content/*.md → ingest.py</text>
+    <text x="1310" y="986" text-anchor="middle" font-size="9.5" fill="#374151">career_rag/content/*.md → ingest.py</text>
+    <text x="1310" y="1000" text-anchor="middle" font-size="9.5" fill="#374151">interview_rag/content/*.md → ingest.py</text>
+    <text x="1310" y="1018" text-anchor="middle" font-size="9.5" fill="#374151">chunk → embed → ChromaDB.add()</text>
+    <text x="1310" y="1036" text-anchor="middle" font-size="9.5" fill="#374151">full wipe-and-rebuild each run</text>
+    <text x="1310" y="1060" text-anchor="middle" font-size="9.5" fill="#6b7280">→ vector_store/ (loaded by rag_core/)</text>
+  </g>
+
+  <line x1="400" y1="1009" x2="420" y2="1009" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="760" y1="1009" x2="780" y2="1009" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1120" y1="1009" x2="1140" y2="1009" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===================== LEGEND ===================== -->
+  <rect x="40" y="1122" width="1480" height="190" rx="10" fill="#ffffff" stroke="#111827" stroke-width="1.5"/>
+  <text x="56" y="1146" font-size="14" font-weight="bold" fill="#111827">Legend</text>
+
+  <rect x="60" y="1160" width="22" height="16" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="90" y="1173" font-size="11" fill="#111827">Frontend (Next.js)</text>
+  <rect x="260" y="1160" width="22" height="16" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="290" y="1173" font-size="11" fill="#111827">Backend (FastAPI)</text>
+  <rect x="460" y="1160" width="22" height="16" fill="#ffedd5" stroke="#ea580c"/>
+  <text x="490" y="1173" font-size="11" fill="#111827">Data Layer (SQLAlchemy / DB)</text>
+  <rect x="720" y="1160" width="22" height="16" fill="#ede9fe" stroke="#7c3aed"/>
+  <text x="750" y="1173" font-size="11" fill="#111827">AI / Model Layer (5 trained models)</text>
+  <rect x="1020" y="1160" width="22" height="16" fill="#cffafe" stroke="#0891b2"/>
+  <text x="1050" y="1173" font-size="11" fill="#111827">RAG Orchestration (local retrieval + cloud generation)</text>
+
+  <line x1="60" y1="1200" x2="110" y2="1200" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="120" y="1204" font-size="11" fill="#111827">In-process call / local data flow</text>
+  <line x1="460" y1="1200" x2="510" y2="1200" stroke="#0e7490" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowDashed)"/>
+  <text x="520" y="1204" font-size="11" fill="#111827">External HTTP call (cloud API — Groq)</text>
+  <rect x="880" y="1192" width="22" height="16" fill="#f3e8ff" stroke="#7c3aed"/>
+  <text x="910" y="1204" font-size="11" fill="#111827">Always-resident model (loaded at startup, never unloaded)</text>
+
+  <text x="60" y="1234" font-size="11" fill="#374151">* M5's 0.9497 Entity F1 is measured on an auto-tagged gold split, not a manually hand-corrected one — see §4.3's caveat.</text>
+  <text x="60" y="1252" font-size="11" fill="#374151">M1, M2, M3 did not meet their original target metrics (documented, root-caused in §4.3) — M4 and M5 did. All 5 are live in production regardless;</text>
+  <text x="60" y="1268" font-size="11" fill="#374151">this is a deliberate decision to ship honestly-measured real models rather than withhold a working system over missed accuracy targets.</text>
+  <text x="60" y="1292" font-size="10.5" fill="#6b7280">Generated 2026-11-14 from the live codebase — see docs/MENTORA_TECHNICAL_MANUAL.md for the full written manual this diagram accompanies.</text>
+</svg>
