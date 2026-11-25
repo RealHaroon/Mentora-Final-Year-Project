@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="AI study timetable">
+  <rect width="640" height="360" fill="#d7ede1"/>
+  <rect x="40" y="30" width="560" height="300" rx="16" fill="#fff"/>
+  <rect x="40" y="30" width="560" height="52" rx="16" fill="#1a5c42"/>
+  <rect x="40" y="66" width="560" height="16" fill="#1a5c42"/>
+  <text x="64" y="63" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#fff">This Week's Plan</text>
+  <g font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#5c7268" text-anchor="middle">
+    <text x="150" y="108">MON</text><text x="240" y="108">TUE</text><text x="330" y="108">WED</text>
+    <text x="420" y="108">THU</text><text x="510" y="108">FRI</text>
+  </g>
+  <g stroke="#d6e8dd" stroke-width="1.5">
+    <line x1="195" y1="96" x2="195" y2="276"/><line x1="285" y1="96" x2="285" y2="276"/>
+    <line x1="375" y1="96" x2="375" y2="276"/><line x1="465" y1="96" x2="465" y2="276"/>
+  </g>
+  <g font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#0d2b21">
+    <rect x="108" y="122" width="78" height="56" rx="8" fill="#a9dcc1"/><text x="118" y="154">Physics</text>
+    <rect x="108" y="190" width="78" height="40" rx="8" fill="#f6e6cf"/><text x="118" y="215">Maths</text>
+    <rect x="198" y="122" width="78" height="40" rx="8" fill="#f6e6cf"/><text x="208" y="147">Maths</text>
+    <rect x="198" y="174" width="78" height="64" rx="8" fill="#cfe0f7"/><text x="208" y="211">Chem</text>
+    <rect x="288" y="134" width="78" height="64" rx="8" fill="#a9dcc1"/><text x="298" y="171">Physics</text>
+    <rect x="288" y="210" width="78" height="48" rx="8" fill="#ffd9d2"/><text x="298" y="229">Weak:</text><text x="298" y="245">Optics</text>
+    <rect x="378" y="122" width="78" height="48" rx="8" fill="#cfe0f7"/><text x="388" y="151">Chem</text>
+    <rect x="378" y="182" width="78" height="56" rx="8" fill="#a9dcc1"/><text x="388" y="214">Mock MCQ</text>
+    <rect x="468" y="122" width="78" height="72" rx="8" fill="#ffd9d2"/><text x="478" y="154">Weak:</text><text x="478" y="170">Organic</text>
+    <rect x="468" y="206" width="78" height="40" rx="8" fill="#f6e6cf"/><text x="478" y="231">Revision</text>
+  </g>
+  <circle cx="568" cy="56" r="10" fill="#2f9e6b"/><path d="M563 56l4 4 7-8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="64" y="288" width="140" height="22" rx="11" fill="#eef8f2"/>
+  <text x="76" y="304" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#1a5c42">Exam in 42 days</text>
+</svg>

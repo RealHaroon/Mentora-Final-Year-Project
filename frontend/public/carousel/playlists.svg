@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Video playlists">
+  <rect width="640" height="360" fill="#d7ede1"/>
+  <rect x="40" y="30" width="560" height="300" rx="16" fill="#fff"/>
+  <rect x="64" y="54" width="290" height="163" rx="12" fill="#0d2f24"/>
+  <circle cx="209" cy="135" r="34" fill="#2f9e6b"/>
+  <path d="M199 116l32 19-32 19z" fill="#fff"/>
+  <rect x="64" y="228" width="290" height="8" rx="4" fill="#d6e8dd"/>
+  <rect x="64" y="228" width="170" height="8" rx="4" fill="#2f9e6b"/>
+  <text x="64" y="268" font-family="Georgia,serif" font-size="19" font-weight="700" fill="#0d2b21">Newton's Laws of Motion</text>
+  <text x="64" y="292" font-family="Arial,sans-serif" font-size="13" fill="#5c7268">Auto-added after your study session</text>
+  <g font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#0d2b21">
+    <rect x="378" y="54" width="198" height="52" rx="10" fill="#eef8f2"/><rect x="388" y="64" width="44" height="32" rx="6" fill="#a9dcc1"/><text x="442" y="85">Kinematics</text>
+    <rect x="378" y="116" width="198" height="52" rx="10" fill="#eef8f2"/><rect x="388" y="126" width="44" height="32" rx="6" fill="#cfe0f7"/><text x="442" y="147">Friction</text>
+    <rect x="378" y="178" width="198" height="52" rx="10" fill="#eef8f2"/><rect x="388" y="188" width="44" height="32" rx="6" fill="#f6e6cf"/><text x="442" y="209">Work &amp; Energy</text>
+    <rect x="378" y="240" width="198" height="52" rx="10" fill="#eef8f2"/><rect x="388" y="250" width="44" height="32" rx="6" fill="#ffd9d2"/><text x="442" y="271">Optics</text>
+  </g>
+</svg>

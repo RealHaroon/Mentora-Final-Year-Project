@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import HeroCarousel from "@/components/HeroCarousel";
 
 export default async function HomePage() {
   // Found 2026-11-14: this always rendered variant="public" (Login/Sign Up
@@ -15,16 +16,7 @@ export default async function HomePage() {
 
       <section className="hero">
         <div className="container">
-          <div className="hero-carousel">
-            <div className="carousel-art" />
-            <p>AI-generated timetable adapts daily to your exam date, weak topics & available hours</p>
-            <div className="carousel-dots">
-              <span className="active" />
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+          <HeroCarousel />
           <div className="hero-copy">
             <div className="eyebrow">Smart Learning Platform</div>
             <h1>

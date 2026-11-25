@@ -223,8 +223,8 @@ button { font-family: inherit; cursor: pointer; }
 
 .hero .container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 40px;
   align-items: center;
 }
 
@@ -232,22 +232,60 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--radius-lg);
-  padding: 26px;
+  padding: 14px 14px 20px;
   text-align: center;
 }
 
-.hero-carousel .carousel-art {
-  background: var(--green-100);
+.carousel-viewport {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--radius-md);
-  height: 170px;
   margin-bottom: 18px;
+  aspect-ratio: 16 / 10;
+  background: var(--green-100);
 }
 
-.hero-carousel p { color: rgba(255,255,255,0.75); font-size: 0.92rem; margin: 0 0 14px; }
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease;
+}
+
+.carousel-slide { flex: 0 0 100%; height: 100%; }
+.carousel-slide img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; }
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(13, 47, 36, 0.65);
+  color: var(--white);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+.carousel-viewport:hover .carousel-arrow,
+.carousel-arrow:focus-visible { opacity: 1; }
+.carousel-arrow:hover { background: rgba(13, 47, 36, 0.9); }
+.carousel-prev { left: 8px; }
+.carousel-next { right: 8px; }
+
+.hero-carousel p { color: rgba(255,255,255,0.75); font-size: 0.92rem; margin: 0 0 14px; min-height: 2.8em; }
 
 .carousel-dots { display: flex; gap: 6px; justify-content: center; }
-.carousel-dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); display: block; }
-.carousel-dots span.active { background: var(--green-500); }
+.carousel-dots button {
+  width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s ease, width 0.2s ease;
+}
+.carousel-dots button.active { background: var(--green-500); width: 22px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) { .carousel-track { transition: none; } }
 
 .eyebrow {
   text-transform: uppercase;

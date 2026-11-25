@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Adaptive MCQ test">
+  <rect width="640" height="360" fill="#d7ede1"/>
+  <rect x="40" y="30" width="560" height="300" rx="16" fill="#fff"/>
+  <rect x="64" y="52" width="124" height="26" rx="13" fill="#eef8f2"/>
+  <text x="78" y="70" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#1a5c42">Question 7 of 20</text>
+  <text x="64" y="112" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#0d2b21">Which law relates force, mass and acceleration?</text>
+  <g font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#0d2b21">
+    <rect x="64" y="132" width="512" height="42" rx="10" fill="#fff" stroke="#d6e8dd" stroke-width="2"/>
+    <circle cx="90" cy="153" r="9" fill="none" stroke="#8fa39a" stroke-width="2"/><text x="112" y="158">Newton's First Law</text>
+    <rect x="64" y="184" width="512" height="42" rx="10" fill="#eef8f2" stroke="#2f9e6b" stroke-width="2.5"/>
+    <circle cx="90" cy="205" r="9" fill="#2f9e6b"/><path d="M85 205l4 4 7-8" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="112" y="210">Newton's Second Law</text>
+    <rect x="64" y="236" width="512" height="42" rx="10" fill="#fff" stroke="#d6e8dd" stroke-width="2"/>
+    <circle cx="90" cy="257" r="9" fill="none" stroke="#8fa39a" stroke-width="2"/><text x="112" y="262">Newton's Third Law</text>
+  </g>
+  <rect x="64" y="294" width="230" height="24" rx="12" fill="#f6e6cf"/>
+  <text x="78" y="311" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#b5651d">Gap detected: Dynamics</text>
+</svg>
